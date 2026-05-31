@@ -1375,7 +1375,7 @@
             const order = orders.find(o => o.id === orderId);
             if (order) {
                 order.status = newStatus;
-                showMessage::(`Status pesanan <b>${orderId}</b> diubah menjadi: <b>${newStatus}</b>`);
+                showMessage(`Status pesanan <b>${orderId}</b> diubah menjadi: <b>${newStatus}</b>`);
                 renderTokoDashboard();
             }
         }
@@ -1618,4 +1618,4 @@
         }
     </script>
 </body>
-                    </html>
+</html>
