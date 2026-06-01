@@ -3,573 +3,175 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Segari Mobile - Belanja Sayur & Buah Segar</title>
+    <title>Login Terpadu - Segari Ecosystem</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        /* Sembunyikan scrollbar untuk pengalaman seperti aplikasi native */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-        /* Pembatasan lebar maksimal agar selalu terlihat seperti handphone di desktop */
         body {
             background-color: #f3f4f6;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             margin: 0;
             display: flex;
             justify-content: center;
-        }
-        .mobile-container {
-            width: 100%;
-            max-width: 480px;
+            align-items: center;
             min-height: 100vh;
+        }
+        .login-card {
+            width: 100%;
+            max-width: 440px;
             background-color: #ffffff;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            overflow-x: hidden;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+            border-radius: 24px;
+            padding: 32px;
         }
-        /* Efek klik tombol */
-        .btn-active:active {
-            transform: scale(0.95);
-        }
-        
-        /* Animasi Modal & Toast */
-        @keyframes slideUp {
-            from { transform: translateY(100%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        .animate-slide-up { animation: slideUp 0.3s ease-out forwards; }
-        .animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
-        
-        /* Toast notification */
-        #toast-container {
-            position: fixed;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            pointer-events: none;
-            width: 90%;
-            max-width: 400px;
-        }
-        .toast-msg {
-            background: rgba(31, 41, 55, 0.9);
-            color: white;
-            padding: 12px 16px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 500;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            animation: slideUp 0.3s ease-out, fadeOut 0.3s ease-in 2.7s forwards;
-        }
-        @keyframes fadeOut {
-            to { opacity: 0; transform: translateY(20px); }
-        }
+        .btn-active:active { transform: scale(0.97); }
     </style>
 </head>
-<body class="antialiased">
+<body class="p-4">
 
-    <div class="mobile-container pb-20">
+    <div class="login-card">
+        <!-- Logo -->
+        <div class="text-center mb-6">
+            <span class="text-3xl font-black text-green-600 tracking-tight">se<span class="text-orange-500">gari</span></span>
+            <span class="block text-xs font-medium text-gray-400 mt-1">Satu Akun, Banyak Kemudahan</span>
+        </div>
 
-        <div id="toast-container"></div>
-
-        <header id="main-header" class="sticky top-0 z-40 bg-white border-b border-gray-100 px-4 pt-3 pb-2">
-            <div class="flex items-center justify-between mb-2">
-                <div class="flex items-center gap-1 cursor-pointer" onclick="switchTab('home')">
-                    <span class="text-2xl font-black text-green-600 tracking-tight">se<span class="text-orange-500">gari</span></span>
-                    <span class="bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5 rounded ml-1">Hijau & Segar</span>
-                </div>
-                <button onclick="showToast('Fitur Ubah Lokasi Berhasil')" class="flex items-center gap-1 text-xs text-gray-600 bg-gray-50 px-2.5 py-1 rounded-full border border-gray-100 max-w-[180px] btn-active">
-                    <i data-lucide="map-pin" class="w-3.5 h-3.5 text-green-600 shrink-0"></i>
-                    <span id="current-address-text" class="truncate font-semibold text-gray-800">Kirim ke: Rumah Saya...</span>
-                    <i data-lucide="chevron-down" class="w-3 h-3 text-gray-500 shrink-0"></i>
-                </button>
-            </div>
-
-            <div class="relative">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <i data-lucide="search" class="h-4 w-4 text-gray-400"></i>
-                </span>
-                <input type="text" id="search-input" placeholder="Cari bayam, apel, daging sapi, telur..." class="w-full pl-9 pr-4 py-2 bg-gray-100 text-sm rounded-xl border-none focus:outline-none focus:ring-2 focus:ring-green-500/20 text-gray-800" />
-            </div>
-        </header>
-
-        <main id="home-page" class="flex-grow overflow-y-auto">
-            
-            <div class="px-4 py-3">
-                <div class="flex gap-3 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory">
-                    <div class="min-w-full bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-4 text-white snap-center relative overflow-hidden h-36 flex flex-col justify-between">
-                        <div class="z-10">
-                            <span class="bg-yellow-400 text-green-950 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Spesial Gajian</span>
-                            <h3 class="text-lg font-extrabold mt-1 leading-tight">Diskon Sembako s/d 40%</h3>
-                            <p class="text-xs text-green-50">Stok dapur melimpah, dompet tetap aman!</p>
-                        </div>
-                        <p class="text-[10px] text-green-200 z-10">*S&K Berlaku | Min. Belanja Rp50rb</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="px-4 py-2">
-                <h3 class="text-sm font-bold text-gray-800 mb-3">Kategori Belanja</h3>
-                <div class="grid grid-cols-4 gap-3">
-                    <button class="flex flex-col items-center gap-1 bg-green-50 p-2 rounded-xl border border-green-100 transition btn-active">
-                        <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white"><i data-lucide="layout-grid" class="w-5 h-5"></i></div>
-                        <span class="text-[11px] font-bold text-gray-700 text-center">Semua</span>
-                    </button>
-                    <button class="flex flex-col items-center gap-1 bg-gray-50 p-2 rounded-xl transition btn-active">
-                        <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600"><i data-lucide="leaf" class="w-5 h-5"></i></div>
-                        <span class="text-[11px] font-medium text-gray-600 text-center">Sayuran</span>
-                    </button>
-                    <button class="flex flex-col items-center gap-1 bg-gray-50 p-2 rounded-xl transition btn-active">
-                        <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-500"><i data-lucide="apple" class="w-5 h-5"></i></div>
-                        <span class="text-[11px] font-medium text-gray-600 text-center">Buah</span>
-                    </button>
-                    <button class="flex flex-col items-center gap-1 bg-gray-50 p-2 rounded-xl transition btn-active">
-                        <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-500"><i data-lucide="beef" class="w-5 h-5"></i></div>
-                        <span class="text-[11px] font-medium text-gray-600 text-center">Daging</span>
-                    </button>
-                </div>
-            </div>
-
-            <div class="bg-orange-50 px-4 py-4 my-4">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="bg-orange-500 text-white font-bold text-xs px-2.5 py-1 rounded-md tracking-wider flex items-center gap-1">
-                        <i data-lucide="zap" class="w-3.5 h-3.5 fill-current"></i> FLASH SALE
-                    </span>
-                </div>
-                <div class="flex gap-3 overflow-x-auto no-scrollbar pb-1">
-                    <div class="bg-white rounded-xl p-2.5 min-w-[135px] border border-orange-100 flex flex-col justify-between shadow-sm">
-                        <div>
-                            <h4 class="text-xs font-semibold text-gray-800 truncate">Jeruk Santang Segar</h4>
-                            <div class="text-xs font-bold text-orange-500">Rp19.500</div>
-                        </div>
-                        <button onclick="handleAddToCart('Jeruk Santang')" class="w-full mt-2 bg-green-600 text-white py-1 rounded-lg text-[11px] font-bold btn-active transition flex items-center justify-center gap-1">
-                            <i data-lucide="plus" class="w-3 h-3"></i> Beli
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </main>
-
-        <main id="cart-page" class="hidden flex-grow px-4 pt-3 overflow-y-auto">
-            <h2 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-                <i data-lucide="shopping-cart" class="text-green-600"></i> Keranjang Belanja
-            </h2>
-            <div id="cart-active-state" class="space-y-3">
-                <div class="bg-white border border-gray-100 p-3 rounded-xl flex justify-between items-center shadow-sm">
-                    <div>
-                        <h4 class="text-xs font-bold text-gray-800" id="cart-item-title">Belum ada barang</h4>
-                        <p class="text-[10px] text-gray-400">1 Pack</p>
-                    </div>
-                    <span class="text-xs font-bold text-green-600" id="cart-item-price">Rp0</span>
-                </div>
-                <button onclick="processCheckout()" class="w-full bg-green-600 text-white font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 btn-active text-sm shadow-md mt-4">
-                    <span>Bayar Sekarang</span> <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                </button>
-            </div>
-        </main>
-
-        <main id="promo-page" class="hidden flex-grow px-4 pt-3 overflow-y-auto">
-            <h2 class="text-lg font-bold text-gray-800 mb-1 flex items-center gap-1.5">
-                <i data-lucide="badge-percent" class="text-orange-500"></i> Voucher & Promo
-            </h2>
-            <div class="bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl p-4 text-white mt-4">
-                <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">PENGGUNA BARU</span>
-                <h3 class="text-md font-black mt-2">Diskon Langsung Rp15.000</h3>
-            </div>
-        </main>
-
-        <main id="tracking-page" class="hidden flex-grow px-4 pt-3 overflow-y-auto">
-            <h2 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-1.5">
-                <i data-lucide="map" class="text-green-600"></i> Lacak Pesanan
-            </h2>
-            <div class="bg-white border border-gray-100 rounded-2xl p-4 text-center">
-                <p class="text-xs text-gray-500">Gunakan Akun Konsumen untuk berbelanja dan melacak pesanan.</p>
-            </div>
-        </main>
-
-        <main id="profile-page" class="hidden flex-grow px-4 pt-5 overflow-y-auto">
-            <div class="flex items-center gap-3 bg-gradient-to-r from-green-600 to-emerald-700 p-4 rounded-2xl text-white mb-6 shadow-sm">
-                <div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center"><i data-lucide="user" class="w-6 h-6"></i></div>
-                <div>
-                    <h3 class="font-bold text-sm" id="user-status-title">Belum Login</h3>
-                    <p class="text-xs text-green-100" id="user-status-role">Silahkan pilih portal hak akses di bawah</p>
-                </div>
-            </div>
-
-            <div class="space-y-3">
-                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Pilih Portal Akses</h4>
-                
-                <button onclick="navigateToLogin('konsumen')" class="w-full flex items-center justify-between p-3.5 bg-gray-50 border border-gray-100 rounded-xl hover:bg-green-50/50 transition text-left btn-active">
-                    <div class="flex items-center gap-3">
-                        <div class="p-2 bg-green-100 text-green-600 rounded-lg"><i data-lucide="shopping-bag" class="w-5 h-5"></i></div>
-                        <div>
-                            <h4 class="text-xs font-bold text-gray-800">Masuk Sebagai Konsumen</h4>
-                            <p class="text-[10px] text-gray-500">Portal belanja sayur dan buah segar harian</p>
-                        </div>
-                    </div>
-                    <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
-                </button>
-
-                <button onclick="navigateToLogin('toko')" class="w-full flex items-center justify-between p-3.5 bg-gray-50 border border-gray-100 rounded-xl hover:bg-orange-50/50 transition text-left btn-active">
-                    <div class="flex items-center gap-3">
-                        <div class="p-2 bg-orange-100 text-orange-500 rounded-lg"><i data-lucide="store" class="w-5 h-5"></i></div>
-                        <div>
-                            <h4 class="text-xs font-bold text-gray-800">Dashboard Mitra Toko</h4>
-                            <p class="text-[10px] text-gray-500">Kelola stok produk, pesanan toko, dan omzet</p>
-                        </div>
-                    </div>
-                    <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
-                </button>
-
-                <button onclick="navigateToLogin('admin')" class="w-full flex items-center justify-between p-3.5 bg-gray-50 border border-gray-100 rounded-xl hover:bg-blue-50/50 transition text-left btn-active">
-                    <div class="flex items-center gap-3">
-                        <div class="p-2 bg-blue-100 text-blue-600 rounded-lg"><i data-lucide="shield-check" class="w-5 h-5"></i></div>
-                        <div>
-                            <h4 class="text-xs font-bold text-gray-800">Portal Utama Admin</h4>
-                            <p class="text-[10px] text-gray-500">Manajemen user, sistem aplikasi, dan verifikasi</p>
-                        </div>
-                    </div>
-                    <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
-                </button>
-
-                <button onclick="handleLogout()" id="logout-btn" class="hidden w-full text-center py-3 bg-red-50 text-red-600 rounded-xl font-bold text-xs mt-6 border border-red-100 btn-active">
-                    Keluar Akun
-                </button>
-            </div>
-        </main>
-
-        <main id="login-konsumen-page" class="hidden flex-grow px-6 pt-10">
-            <div class="text-center mb-8">
-                <span class="text-3xl font-black text-green-600">se<span class="text-orange-500">gari</span></span>
-                <h3 class="text-md font-bold text-gray-800 mt-4">Masuk Portal Konsumen</h3>
-                <p class="text-xs text-gray-400 mt-1">Silahkan masuk untuk melanjutkan pemesanan dapur Anda</p>
-            </div>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Email / Nomor HP</label>
-                    <input type="text" value="konsumen@segari.com" class="w-full p-3 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/20" />
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Password</label>
-                    <input type="password" value="123456" class="w-full p-3 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/20" />
-                </div>
-                <button onclick="submitLogin('konsumen')" class="w-full bg-green-600 text-white font-bold py-3.5 rounded-xl text-xs btn-active shadow-sm shadow-green-200">Masuk & Belanja</button>
-                <button onclick="switchTab('home')" class="w-full text-center text-xs text-gray-500 font-medium pt-2 block">Kembali ke Beranda</button>
-            </div>
-        </main>
-
-        <main id="login-toko-page" class="hidden flex-grow px-6 pt-10">
-            <div class="text-center mb-8">
-                <span class="text-3xl font-black text-orange-500">mitra<span class="text-green-600">segari</span></span>
-                <h3 class="text-md font-bold text-gray-800 mt-4">Login Dashboard Mitra Toko</h3>
-                <p class="text-xs text-gray-400 mt-1">Akses kelola penjualan komoditas & stok toko Anda</p>
-            </div>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">ID Kemitraan / Email Toko</label>
-                    <input type="text" value="tokosubur@segari.com" class="w-full p-3 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Password Mitra</label>
-                    <input type="password" value="123456" class="w-full p-3 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
-                </div>
-                <button onclick="submitLogin('toko')" class="w-full bg-orange-500 text-white font-bold py-3.5 rounded-xl text-xs btn-active shadow-sm shadow-orange-200">Masuk Dashboard Toko</button>
-                <button onclick="switchTab('profile')" class="w-full text-center text-xs text-gray-500 font-medium pt-2 block">Kembali ke Menu Profil</button>
-            </div>
-        </main>
-
-        <main id="login-admin-page" class="hidden flex-grow px-6 pt-10">
-            <div class="text-center mb-8">
-                <span class="text-2xl font-black text-blue-700 tracking-wider">ADMIN PANEL</span>
-                <h3 class="text-md font-bold text-gray-800 mt-4">Autentikasi Administrator</h3>
-                <p class="text-xs text-gray-400 mt-1">Sistem Keamanan internal. Seluruh aktivitas dicatat.</p>
-            </div>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Username Admin</label>
-                    <input type="text" value="admin.utama" class="w-full p-3 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Security Key Token</label>
-                    <input type="password" value="admin123" class="w-full p-3 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
-                </div>
-                <button onclick="submitLogin('admin')" class="w-full bg-blue-700 text-white font-bold py-3.5 rounded-xl text-xs btn-active shadow-sm shadow-blue-200">Verifikasi & Masuk</button>
-                <button onclick="switchTab('profile')" class="w-full text-center text-xs text-gray-500 font-medium pt-2 block">Kembali ke Menu Profil</button>
-            </div>
-        </main>
-
-        <main id="dashboard-toko-page" class="hidden flex-grow px-4 pt-4 bg-gray-50 overflow-y-auto">
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h2 class="text-base font-black text-gray-800 flex items-center gap-1.5"><i data-lucide="store" class="text-orange-500"></i> Toko Subur Makmur</h2>
-                    <p class="text-[10px] text-gray-400">ID Mitra: #SGR-99211</p>
-                </div>
-                <button onclick="handleLogout()" class="text-[10px] bg-red-100 text-red-600 px-3 py-1 rounded-full font-bold btn-active">Keluar Dashboard</button>
-            </div>
-            <div class="grid grid-cols-2 gap-3 mb-4">
-                <div class="bg-white border p-3 rounded-xl shadow-sm">
-                    <span class="text-[10px] font-bold text-gray-400 uppercase">Omzet Hari Ini</span>
-                    <h3 class="text-sm font-black text-gray-800 mt-1 text-orange-500">Rp2.450.000</h3>
-                </div>
-                <div class="bg-white border p-3 rounded-xl shadow-sm">
-                    <span class="text-[10px] font-bold text-gray-400 uppercase">Pesanan Baru</span>
-                    <h3 class="text-sm font-black text-gray-800 mt-1 text-green-600">14 Pesanan</h3>
-                </div>
-            </div>
-            <div class="bg-white border rounded-xl p-3 space-y-2 shadow-sm">
-                <h4 class="text-xs font-bold text-gray-800 border-b pb-1.5 mb-2">Manajemen Stok Toko</h4>
-                <div class="flex justify-between items-center text-xs text-gray-600 py-1 border-b border-gray-100">
-                    <span>Bayam Organik (Ikat)</span>
-                    <span class="font-bold text-green-600">45 Unit</span>
-                </div>
-                <div class="flex justify-between items-center text-xs text-gray-600 py-1 border-b border-gray-100">
-                    <span>Jeruk Santang (Kg)</span>
-                    <span class="font-bold text-orange-500">12 Unit (Tipis)</span>
-                </div>
-            </div>
-        </main>
-
-        <main id="dashboard-admin-page" class="hidden flex-grow px-4 pt-4 bg-slate-900 text-slate-100 overflow-y-auto">
-            <div class="flex items-center justify-between mb-6 border-b border-slate-800 pb-3">
-                <div>
-                    <h2 class="text-sm font-black text-blue-400 flex items-center gap-1.5"><i data-lucide="shield-alert"></i> CENTRAL CONTROL APP</h2>
-                    <p class="text-[10px] text-slate-400">Superadmin: Active Session</p>
-                </div>
-                <button onclick="handleLogout()" class="text-[10px] bg-red-950 text-red-400 border border-red-900 px-3 py-1 rounded-full font-bold btn-active">Exit Secure Panel</button>
-            </div>
-            <div class="space-y-4 text-xs">
-                <div class="bg-slate-800 p-3 rounded-xl border border-slate-700">
-                    <h3 class="font-bold text-slate-300 mb-2">Ringkasan Sistem</h3>
-                    <div class="space-y-1 text-[11px]">
-                        <div class="flex justify-between"><span>Total User Terdaftar:</span><span class="font-bold text-white">128,459</span></div>
-                        <div class="flex justify-between"><span>Total Pengelola Toko:</span><span class="font-bold text-white">412 Mitra</span></div>
-                        <div class="flex justify-between"><span>Server Response Time:</span><span class="font-bold text-green-400">12ms (Optimal)</span></div>
-                    </div>
-                </div>
-                <div class="bg-slate-800 p-3 rounded-xl border border-slate-700">
-                    <h3 class="font-bold text-yellow-400 mb-2">Log Keamanan Terbaru</h3>
-                    <p class="font-mono text-[9px] text-slate-400 bg-black/40 p-2 rounded">
-                        [18:45:11] User #9011 Checkout Berhasil via Gateway-3<br>
-                        [18:50:02] Toko Subur Makmur update stok produk: Jeruk Santang
-                    </p>
-                </div>
-            </div>
-        </main>
-
-        <nav id="bottom-nav" class="fixed bottom-0 w-full max-w-[480px] bg-white border-t border-gray-200 flex justify-around items-center pb-safe pt-2 pb-2 z-40 shadow-[0_-5px_10px_rgba(0,0,0,0.02)]">
-            <button onclick="switchTab('home')" class="nav-btn flex flex-col items-center p-2 text-green-600 w-16 transition">
-                <i data-lucide="home" class="w-5 h-5 mb-1"></i>
-                <span class="text-[9px] font-semibold">Beranda</span>
+        <!-- Pemilih Login Tabs -->
+        <div class="flex bg-gray-100 p-1 rounded-xl mb-6">
+            <button onclick="toggleLoginType('konsumen')" id="tab-konsumen" class="flex-1 py-2 text-xs font-bold rounded-lg text-center bg-white text-green-600 shadow-sm transition-all duration-200">
+                Konsumen
             </button>
-            <button onclick="switchTab('promo')" class="nav-btn flex flex-col items-center p-2 text-gray-400 hover:text-green-600 w-16 transition">
-                <i data-lucide="badge-percent" class="w-5 h-5 mb-1"></i>
-                <span class="text-[9px] font-medium">Promo</span>
+            <button onclick="toggleLoginType('toko')" id="tab-toko" class="flex-1 py-2 text-xs font-bold rounded-lg text-center text-gray-500 hover:text-green-600 transition-all duration-200">
+                Toko (Mitra)
             </button>
-            <button onclick="switchTab('cart')" class="nav-btn relative flex flex-col items-center p-2 text-gray-400 hover:text-green-600 w-16 transition">
+            <button onclick="toggleLoginType('admin')" id="tab-admin" class="flex-1 py-2 text-xs font-bold rounded-lg text-center text-gray-500 hover:text-green-600 transition-all duration-200">
+                Admin
+            </button>
+        </div>
+
+        <!-- Form Login -->
+        <form id="login-form" onsubmit="handleLoginSubmit(event)" class="space-y-4">
+            <!-- Label Tipe Dinamis -->
+            <div class="border-l-4 border-green-500 pl-3 py-1 mb-2">
+                <span id="role-title" class="text-xs font-black text-green-700 uppercase tracking-wider">Login Konsumen</span>
+                <p id="role-desc" class="text-[10px] text-gray-400">Gunakan akun pembeli untuk memesan produk segar.</p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1">Email / Username</label>
                 <div class="relative">
-                    <i data-lucide="shopping-cart" class="w-5 h-5 mb-1"></i>
-                    <span id="cart-badge" class="absolute -top-1 -right-2 bg-red-500 text-white text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center hidden border-2 border-white">0</span>
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                        <i data-lucide="mail" class="w-4 h-4"></i>
+                    </span>
+                    <input type="text" id="username" required class="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 text-gray-800" placeholder="Masukkan nama/email">
                 </div>
-                <span class="text-[9px] font-medium">Keranjang</span>
-            </button>
-            <button onclick="switchTab('tracking')" class="nav-btn flex flex-col items-center p-2 text-gray-400 hover:text-green-600 w-16 transition">
-                <i data-lucide="map" class="w-5 h-5 mb-1"></i>
-                <span class="text-[9px] font-medium">Status</span>
-            </button>
-            <button onclick="switchTab('profile')" class="nav-btn flex flex-col items-center p-2 text-gray-400 hover:text-green-600 w-16 transition">
-                <i data-lucide="user" class="w-5 h-5 mb-1"></i>
-                <span class="text-[9px] font-medium">Akun</span>
-            </button>
-        </nav>
+            </div>
 
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1">Kata Sandi</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                        <i data-lucide="lock" class="w-4 h-4"></i>
+                    </span>
+                    <input type="password" id="password" required class="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 text-gray-800" placeholder="••••••••">
+                </div>
+            </div>
+
+            <!-- Petunjuk Demo Login -->
+            <div class="bg-gray-50 p-2.5 rounded-lg text-[10px] text-gray-500">
+                <p class="font-bold mb-0.5 text-gray-600"><i data-lucide="info" class="w-3.5 h-3.5 inline mr-1 text-blue-500"></i> Akun Demo:</p>
+                <p id="demo-creds">Konsumen: <span class="font-mono text-black">budi</span> / sandi: <span class="font-mono text-black">budi</span></p>
+            </div>
+
+            <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl text-xs btn-active transition-all shadow-md flex items-center justify-center gap-1">
+                <span>Masuk Sekarang</span> <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </button>
+
+            <button type="button" onclick="window.location.href='index.html'" class="w-full bg-white border border-gray-300 text-gray-600 font-bold py-2.5 rounded-xl text-xs btn-active transition hover:bg-gray-50">
+                Kembali ke Beranda Belanja
+            </button>
+        </form>
     </div>
 
     <script>
-        // State Global Aplikasi
-        let authenticatedRole = null; // Menyimpan status role login ('konsumen', 'toko', or 'admin')
-        let selectedProduct = null;   // Menyimpan barang yang ingin dibeli konsumen
+        let selectedRole = 'konsumen';
 
-        // Inisialisasi awal ikon Lucide saat dokumen siap
-        document.addEventListener("DOMContentLoaded", () => {
-            lucide.createIcons();
-        });
-
-        // Router Tab View SPA
-        function switchTab(tabId) {
-            // Daftar semua container halaman utama
-            const mainPages = [
-                'home-page', 'cart-page', 'promo-page', 'tracking-page', 'profile-page',
-                'login-konsumen-page', 'login-toko-page', 'login-admin-page',
-                'dashboard-toko-page', 'dashboard-admin-page'
-            ];
-
-            // Sembunyikan semua halaman terlebih dahulu
-            mainPages.forEach(page => {
-                const element = document.getElementById(page);
-                if (element) element.classList.add('hidden');
-            });
-
-            // Tampilkan halaman target khusus
-            const targetPage = document.getElementById(`${tabId}-page`);
-            if (targetPage) {
-                targetPage.classList.remove('hidden');
-            }
-
-            // Manajemen Kontrol Header & Navigasi berdasarkan halaman yang dibuka
-            const header = document.getElementById('main-header');
-            const bottomNav = document.getElementById('bottom-nav');
-
-            if (tabId.startsWith('login-') || tabId.startsWith('dashboard-')) {
-                if (header) header.classList.add('hidden');
-                if (bottomNav) bottomNav.classList.add('hidden');
-            } else {
-                if (header) header.classList.remove('hidden');
-                if (bottomNav) bottomNav.classList.remove('hidden');
-            }
-
-            // Memperbarui pewarnaan ikon navigasi aktif bawah
-            updateNavColors(tabId);
-        }
-
-        // Memperbarui highlight warna tombol navigasi bawah
-        function updateNavColors(activeTab) {
-            const buttons = document.querySelectorAll('#bottom-nav button');
-            const activeClass = 'text-green-600';
-            const inactiveClass = 'text-gray-400';
-
-            buttons.forEach((btn, index) => {
-                const tabs = ['home', 'promo', 'cart', 'tracking', 'profile'];
-                if (tabs[index] === activeTab) {
-                    btn.classList.add(activeClass);
-                    btn.classList.remove(inactiveClass);
-                    btn.querySelector('span').classList.add('font-semibold');
+        function toggleLoginType(role) {
+            selectedRole = role;
+            
+            // Atur Class Tombol Nav
+            const tabs = ['konsumen', 'toko', 'admin'];
+            tabs.forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                if (t === role) {
+                    el.className = `flex-1 py-2 text-xs font-bold rounded-lg text-center bg-white shadow-sm transition-all duration-200 ${role === 'admin' ? 'text-indigo-600' : role==='toko' ? 'text-orange-500' : 'text-green-600'}`;
                 } else {
-                    btn.classList.remove(activeClass);
-                    btn.classList.add(inactiveClass);
-                    btn.querySelector('span').classList.remove('font-semibold');
+                    el.className = "flex-1 py-2 text-xs font-bold rounded-lg text-center text-gray-500 hover:text-green-600 transition-all duration-200";
                 }
             });
-        }
 
-        // Logika Interseptor Beli Konsumen (Wajib login konsumen dahulu)
-        function handleAddToCart(productName) {
-            selectedProduct = productName;
-            
-            if (authenticatedRole === 'konsumen') {
-                // Jika sudah login konsumen langsung masukkan ke keranjang
-                document.getElementById('cart-item-title').innerText = productName;
-                document.getElementById('cart-item-price').innerText = 'Rp19.500';
-                document.getElementById('cart-badge').classList.remove('hidden');
-                document.getElementById('cart-badge').innerText = '1';
-                showToast(`${productName} ditambahkan ke keranjang belanja!`);
-            } else {
-                // Bila belum login konsumen, alihkan paksa ke halaman login konsumen
-                showToast("Silahkan login sebagai Konsumen terlebih dahulu!");
-                setTimeout(() => {
-                    switchTab('login-konsumen');
-                }, 800);
-            }
-        }
-
-        // Logika Tombol Bayar Sekarang di Keranjang
-        function processCheckout() {
-            if (authenticatedRole === 'konsumen') {
-                showToast("Transaksi Berhasil diproses! Driver sedang bersiap.");
-                switchTab('tracking');
-            } else {
-                showToast("Silahkan login akun Konsumen untuk menyelesaikan pembayaran!");
-                switchTab('login-konsumen');
-            }
-        }
-
-        // Navigasi Router ke halaman login tertentu dari menu profil
-        function navigateToLogin(role) {
-            if (authenticatedRole === role) {
-                // Jika sudah login dengan role tersebut, langsung lempar ke halaman dashboard/tujuan
-                if (role === 'toko') switchTab('dashboard-toko');
-                else if (role === 'admin') switchTab('dashboard-admin');
-                else showToast("Anda sudah masuk sebagai akun konsumen.");
-            } else {
-                // Jika belum login, buka halaman login role masing-masing
-                switchTab(`login-${role}`);
-            }
-        }
-
-        // Eksekusi Tombol Submit Login Simulasi Form
-        function submitLogin(role) {
-            authenticatedRole = role;
-            showToast(`Login ${role.toUpperCase()} Berhasil Terautentikasi!`);
-
-            // Update UI Tampilan Informasi Menu Profil Utama
-            const statusTitle = document.getElementById('user-status-title');
-            const statusRole = document.getElementById('user-status-role');
-            const logoutBtn = document.getElementById('logout-btn');
-
-            logoutBtn.classList.remove('hidden');
+            // Ganti Judul
+            const roleTitle = document.getElementById('role-title');
+            const roleDesc = document.getElementById('role-desc');
+            const demoCreds = document.getElementById('demo-creds');
+            const formBtn = document.querySelector('form button[type="submit"]');
 
             if (role === 'konsumen') {
-                statusTitle.innerText = "Budi Hartono (Konsumen)";
-                statusRole.innerText = "Level Member: Segari Gold";
-                // Jika sebelumnya ada produk tertunda yang ingin dibeli, langsung eksekusi otomatis
-                if (selectedProduct) {
-                    handleAddToCart(selectedProduct);
-                }
-                switchTab('home');
+                roleTitle.innerText = "Login Konsumen";
+                roleTitle.className = "text-xs font-black text-green-700 uppercase tracking-wider";
+                roleDesc.innerText = "Gunakan akun pembeli untuk memesan produk segar.";
+                demoCreds.innerHTML = 'Konsumen: <span class="font-mono text-black">budi</span> / Sandi: <span class="font-mono text-black">budi</span>';
+                formBtn.className = "w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl text-xs btn-active transition-all shadow-md flex items-center justify-center gap-1";
             } else if (role === 'toko') {
-                statusTitle.innerText = "Toko Subur Makmur (Mitra)";
-                statusRole.innerText = "Status Toko: Buka (Verified)";
-                switchTab('dashboard-toko');
+                roleTitle.innerText = "Login Mitra Toko";
+                roleTitle.className = "text-xs font-black text-orange-700 uppercase tracking-wider";
+                roleDesc.innerText = "Masuk ke dashboard penjualan untuk mengelola toko Anda.";
+                demoCreds.innerHTML = 'Mitra Toko: <span class="font-mono text-black">mitratani</span> / Sandi: <span class="font-mono text-black">toko</span>';
+                formBtn.className = "w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl text-xs btn-active transition-all shadow-md flex items-center justify-center gap-1";
             } else if (role === 'admin') {
-                statusTitle.innerText = "Admin Utama System";
-                statusRole.innerText = "Hak Akses: Super Administrator";
-                switchTab('dashboard-admin');
+                roleTitle.innerText = "Login Admin Sistem";
+                roleTitle.className = "text-xs font-black text-indigo-700 uppercase tracking-wider";
+                roleDesc.innerText = "Akses panel kontrol utama sistem Segari Ecosystem.";
+                demoCreds.innerHTML = 'Admin Utama: <span class="font-mono text-black">admin</span> / Sandi: <span class="font-mono text-black">admin</span>';
+                formBtn.className = "w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl text-xs btn-active transition-all shadow-md flex items-center justify-center gap-1";
             }
         }
 
-        // Sistem Logout / Keluar Akun Hapus Sesi
-        function handleLogout() {
-            authenticatedRole = null;
-            selectedProduct = null;
-            
-            document.getElementById('user-status-title').innerText = "Belum Login";
-            document.getElementById('user-status-role').innerText = "Silahkan pilih portal hak akses di bawah";
-            document.getElementById('logout-btn').classList.add('hidden');
-            document.getElementById('cart-badge').classList.add('hidden');
-            document.getElementById('cart-item-title').innerText = "Belum ada barang";
-            document.getElementById('cart-item-price').innerText = "Rp0";
+        function handleLoginSubmit(e) {
+            e.preventDefault();
+            const user = document.getElementById('username').value.trim();
+            const pass = document.getElementById('password').value;
 
-            showToast("Anda telah keluar dari akun.");
-            switchTab('profile');
+            if (selectedRole === 'konsumen') {
+                if (user === 'budi' && pass === 'budi') {
+                    localStorage.setItem('role', 'konsumen');
+                    localStorage.setItem('userName', 'Budi Santoso');
+                    window.location.href = 'index.html';
+                } else {
+                    alert('Data login Konsumen salah!');
+                }
+            } 
+            else if (selectedRole === 'toko') {
+                if (user === 'mitratani' && pass === 'toko') {
+                    localStorage.setItem('role', 'toko');
+                    localStorage.setItem('userName', 'Mitra Tani Sejahtera');
+                    window.location.href = 'toko.html';
+                } else {
+                    alert('Data login Mitra Toko salah!');
+                }
+            } 
+            else if (selectedRole === 'admin') {
+                if (user === 'admin' && pass === 'admin') {
+                    localStorage.setItem('role', 'admin');
+                    localStorage.setItem('userName', 'Admin Pusat');
+                    window.location.href = 'admin.html';
+                } else {
+                    alert('Data login Admin Utama salah!');
+                }
+            }
         }
 
-        // Generator Komponen Toast Notification Otomatis
-        function showToast(message) {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = 'toast-msg animate-slide-up';
-            toast.innerText = message;
-            container.appendChild(toast);
-
-            // Bersihkan elemen toast otomatis dari DOM setelah 3 detik
-            setTimeout(() => {
-                toast.remove();
-            }, 3000);
-        }
+        window.onload = () => { lucide.createIcons(); }
     </script>
 </body>
-                            </html>
+</html>
