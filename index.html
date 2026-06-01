@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Segari Mobile - Belanja Sayur & Buah Segar</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         /* Sembunyikan scrollbar untuk pengalaman seperti aplikasi native */
@@ -17,1605 +15,561 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
+        /* Pembatasan lebar maksimal agar selalu terlihat seperti handphone di desktop */
         body {
             background-color: #f3f4f6;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
         }
         .mobile-container {
+            width: 100%;
             max-width: 480px;
-            margin: 0 auto;
             min-height: 100vh;
             background-color: #ffffff;
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
             position: relative;
             display: flex;
             flex-direction: column;
+            overflow-x: hidden;
         }
+        /* Efek klik tombol */
         .btn-active:active {
             transform: scale(0.95);
         }
-        /* Animasi Modal */
-        .modal-enter { 
-            animation: slideUp 0.3s ease-out forwards; 
-        }
+        
+        /* Animasi Modal & Toast */
         @keyframes slideUp {
             from { transform: translateY(100%); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .animate-slide-up { animation: slideUp 0.3s ease-out forwards; }
+        .animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
+        
+        /* Toast notification */
+        #toast-container {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+            width: 90%;
+            max-width: 400px;
+        }
+        .toast-msg {
+            background: rgba(31, 41, 55, 0.9);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            animation: slideUp 0.3s ease-out, fadeOut 0.3s ease-in 2.7s forwards;
+        }
+        @keyframes fadeOut {
+            to { opacity: 0; transform: translateY(20px); }
+        }
     </style>
 </head>
-<body class="antialiased text-gray-800">
+<body class="antialiased">
 
-    <!-- Container Utama Ponsel -->
-    <div class="mobile-container pb-24 min-h-screen flex flex-col">
+    <div class="mobile-container pb-20">
 
-        <!-- ================= HEADER & LOKASI (Dinamis Berdasarkan Role) ================= -->
-        <header id="main-header" class="sticky top-0 z-40 bg-white border-b border-gray-100 px-4 pt-3 pb-2 transition-all">
-            <!-- Header default / Konsumen -->
-            <div id="header-konsumen" class="block">
-                <div class="flex items-center justify-between mb-2">
-                    <div class="flex items-center gap-1">
-                        <span class="text-2xl font-black text-green-600 tracking-tight">se<span class="text-orange-500">gari</span></span>
-                        <span class="bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5 rounded ml-1">Hijau & Segar</span>
-                    </div>
-                    <button onclick="openLocationModal()" class="flex items-center gap-1 text-xs text-gray-600 bg-gray-50 px-2.5 py-1 rounded-full border border-gray-100 max-w-[180px] btn-active">
-                        <i data-lucide="map-pin" class="w-3.5 h-3.5 text-green-600 shrink-0"></i>
-                        <span id="current-address-text" class="truncate font-semibold text-gray-800">Kirim ke: Rumah Saya...</span>
-                        <i data-lucide="chevron-down" class="w-3 h-3 text-gray-500 shrink-0"></i>
-                    </button>
+        <div id="toast-container"></div>
+
+        <header id="main-header" class="sticky top-0 z-40 bg-white border-b border-gray-100 px-4 pt-3 pb-2">
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-1 cursor-pointer" onclick="switchTab('home')">
+                    <span class="text-2xl font-black text-green-600 tracking-tight">se<span class="text-orange-500">gari</span></span>
+                    <span class="bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5 rounded ml-1">Hijau & Segar</span>
                 </div>
-                <div class="relative">
-                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <i data-lucide="search" class="h-4 w-4 text-gray-400"></i>
-                    </span>
-                    <input type="text" id="search-input" onkeyup="searchProducts()" placeholder="Cari bayam, apel, daging segar..." class="w-full pl-9 pr-4 py-2 bg-gray-100 text-sm rounded-xl border-none focus:outline-none focus:ring-2 focus:ring-green-500/20 text-gray-800" />
-                </div>
+                <button onclick="showToast('Fitur Ubah Lokasi Berhasil')" class="flex items-center gap-1 text-xs text-gray-600 bg-gray-50 px-2.5 py-1 rounded-full border border-gray-100 max-w-[180px] btn-active">
+                    <i data-lucide="map-pin" class="w-3.5 h-3.5 text-green-600 shrink-0"></i>
+                    <span id="current-address-text" class="truncate font-semibold text-gray-800">Kirim ke: Rumah Saya...</span>
+                    <i data-lucide="chevron-down" class="w-3 h-3 text-gray-500 shrink-0"></i>
+                </button>
             </div>
 
-            <!-- Header Mitra Toko -->
-            <div id="header-toko" class="hidden">
-                <div class="flex items-center justify-between py-1">
-                    <div class="flex items-center gap-2">
-                        <div class="bg-orange-500 text-white p-2 rounded-xl">
-                            <i data-lucide="store" class="w-5 h-5"></i>
-                        </div>
-                        <div>
-                            <h2 id="header-toko-name" class="font-extrabold text-sm text-gray-900">Toko Segar Makmur</h2>
-                            <p class="text-[10px] text-orange-600 font-semibold uppercase tracking-wider">Dashboard Mitra Toko</p>
-                        </div>
-                    </div>
-                    <button onclick="doLogout()" class="bg-red-50 text-red-600 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 btn-active">
-                        <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Keluar
-                    </button>
-                </div>
-            </div>
-
-            <!-- Header Admin -->
-            <div id="header-admin" class="hidden">
-                <div class="flex items-center justify-between py-1">
-                    <div class="flex items-center gap-2">
-                        <div class="bg-gray-900 text-white p-2 rounded-xl">
-                            <i data-lucide="shield" class="w-5 h-5"></i>
-                        </div>
-                        <div>
-                            <h2 class="font-extrabold text-sm text-gray-900">Segari Admin Panel</h2>
-                            <p class="text-[10px] text-gray-500 font-semibold uppercase tracking-wider">Super Administrator</p>
-                        </div>
-                    </div>
-                    <button onclick="doLogout()" class="bg-red-50 text-red-600 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 btn-active">
-                        <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Keluar
-                    </button>
-                </div>
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <i data-lucide="search" class="h-4 w-4 text-gray-400"></i>
+                </span>
+                <input type="text" id="search-input" placeholder="Cari bayam, apel, daging sapi, telur..." class="w-full pl-9 pr-4 py-2 bg-gray-100 text-sm rounded-xl border-none focus:outline-none focus:ring-2 focus:ring-green-500/20 text-gray-800" />
             </div>
         </header>
 
-        <!-- ================= MAIN VIEWPORT KONSUMEN ================= -->
-        <div id="consumer-views" class="flex-grow flex flex-col">
-            <!-- Halaman Utama (Beranda) -->
-            <main id="home-page" class="flex-grow">
-                <!-- Promo Banner -->
-                <div class="px-4 py-3">
-                    <div class="flex gap-3 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory">
-                        <div class="min-w-full bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-4 text-white snap-center relative overflow-hidden h-36 flex flex-col justify-between">
-                            <div class="z-10">
-                                <span class="bg-yellow-400 text-green-950 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Spesial Gajian</span>
-                                <h3 class="text-lg font-extrabold mt-1 leading-tight">Diskon Sembako s/d 40%</h3>
-                                <p class="text-xs text-green-50">Stok dapur melimpah, dompet tetap aman!</p>
-                            </div>
-                            <p class="text-[10px] text-green-200 z-10">*S&K Berlaku | Min. Belanja Rp50rb</p>
-                            <div class="absolute -right-6 -bottom-6 text-green-400/20 w-32 h-32">
-                                <svg fill="currentColor" viewBox="0 0 24 24" class="w-full h-full"><path d="M17 8C12 8 10 11 10 16C10 20 15 21 17 21C19 21 21 19 21 16C21 11 19 8 17 8M7 2C3 2 2 5 2 8C2 12 6 13 8 13C10 13 12 11 12 8C12 5 10 2 7 2Z"/></svg>
-                            </div>
+        <main id="home-page" class="flex-grow overflow-y-auto">
+            
+            <div class="px-4 py-3">
+                <div class="flex gap-3 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory">
+                    <div class="min-w-full bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-4 text-white snap-center relative overflow-hidden h-36 flex flex-col justify-between">
+                        <div class="z-10">
+                            <span class="bg-yellow-400 text-green-950 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Spesial Gajian</span>
+                            <h3 class="text-lg font-extrabold mt-1 leading-tight">Diskon Sembako s/d 40%</h3>
+                            <p class="text-xs text-green-50">Stok dapur melimpah, dompet tetap aman!</p>
                         </div>
+                        <p class="text-[10px] text-green-200 z-10">*S&K Berlaku | Min. Belanja Rp50rb</p>
                     </div>
                 </div>
+            </div>
 
-                <!-- Kategori Belanja -->
-                <div class="px-4 py-2">
-                    <h3 class="text-sm font-bold text-gray-800 mb-3">Kategori Belanja</h3>
-                    <div class="grid grid-cols-4 gap-3">
-                        <button onclick="filterCategory('semua')" class="category-btn flex flex-col items-center gap-1 bg-green-50 p-2 rounded-xl border border-green-100 transition">
-                            <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white">
-                                <i data-lucide="layout-grid" class="w-5 h-5"></i>
-                            </div>
-                            <span class="text-[11px] font-bold text-gray-700 text-center">Semua</span>
-                        </button>
-                        <button onclick="filterCategory('sayur')" class="category-btn flex flex-col items-center gap-1 bg-gray-50 p-2 rounded-xl transition">
-                            <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
-                                <i data-lucide="leaf" class="w-5 h-5"></i>
-                            </div>
-                            <span class="text-[11px] font-medium text-gray-600 text-center">Sayuran</span>
-                        </button>
-                        <button onclick="filterCategory('buah')" class="category-btn flex flex-col items-center gap-1 bg-gray-50 p-2 rounded-xl transition">
-                            <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-500">
-                                <i data-lucide="apple" class="w-5 h-5"></i>
-                            </div>
-                            <span class="text-[11px] font-medium text-gray-600 text-center">Buah</span>
-                        </button>
-                        <button onclick="filterCategory('daging')" class="category-btn flex flex-col items-center gap-1 bg-gray-50 p-2 rounded-xl transition">
-                            <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-500">
-                                <i data-lucide="beef" class="w-5 h-5"></i>
-                            </div>
-                            <span class="text-[11px] font-medium text-gray-600 text-center">Daging</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- List Produk -->
-                <div class="px-4 pb-4 mt-4">
-                    <div class="flex items-center justify-between mb-3">
-                        <h3 id="product-section-title" class="text-sm font-bold text-gray-800">Semua Produk Segar</h3>
-                    </div>
-                    <div id="product-grid" class="grid grid-cols-2 gap-3.5">
-                        <!-- Dimuat dinamis (Tanpa label/badge premium) -->
-                    </div>
-                </div>
-            </main>
-
-            <!-- Halaman Promo -->
-            <main id="promo-page" class="hidden flex-grow px-4 pt-3">
-                <h2 class="text-lg font-bold text-gray-800 mb-1 flex items-center gap-1.5">
-                    <i data-lucide="badge-percent" class="text-orange-500"></i> Voucher Promo Segari
-                </h2>
-                <div class="space-y-3 mt-4">
-                    <div class="bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl p-4 text-white relative overflow-hidden">
-                        <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">PENGGUNA BARU</span>
-                        <h3 class="text-lg font-black mt-2">Potongan Langsung Rp15.000</h3>
-                        <div class="mt-4 flex items-center justify-between bg-white/20 p-2 rounded-lg border border-white/20">
-                            <span class="font-mono font-bold text-sm text-yellow-300">SEGARIPROMO</span>
-                            <button onclick="copyPromo('SEGARIPROMO')" class="bg-white text-orange-600 px-3 py-1 rounded text-xs font-bold btn-active">Salin</button>
-                        </div>
-                    </div>
-                </div>
-            </main>
-
-            <!-- Halaman Keranjang -->
-            <main id="cart-page" class="hidden flex-grow px-4 pt-3">
-                <h2 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-                    <i data-lucide="shopping-cart" class="text-green-600"></i> Keranjang Belanja
-                </h2>
-                
-                <!-- Keranjang Kosong State -->
-                <div id="empty-cart-state" class="hidden flex flex-col items-center justify-center py-12 text-center">
-                    <div class="w-24 h-24 rounded-full bg-green-50 flex items-center justify-center text-green-500 mb-4">
-                        <i data-lucide="shopping-basket" class="w-12 h-12"></i>
-                    </div>
-                    <h3 class="font-bold text-gray-700">Keranjang Belanja Kosong</h3>
-                    <button onclick="switchTab('home')" class="mt-4 bg-green-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold btn-active">Mulai Belanja</button>
-                </div>
-
-                <!-- Keranjang Aktif -->
-                <div id="cart-active-state" class="space-y-4">
-                    <div id="cart-items-list" class="space-y-3">
-                        <!-- Dimuat dinamis -->
-                    </div>
-
-                    <!-- Slot Pengiriman -->
-                    <div class="bg-green-50/50 p-4 rounded-xl border border-green-100">
-                        <h4 class="text-xs font-bold text-green-800 mb-2.5 flex items-center gap-1.5">
-                            <i data-lucide="truck" class="w-3.5 h-3.5"></i> Jadwal Pengiriman Besok
-                        </h4>
-                        <div class="grid grid-cols-2 gap-2">
-                            <label class="relative flex flex-col p-2.5 bg-white border border-green-200 rounded-lg cursor-pointer">
-                                <input type="radio" name="shipping-slot" value="pagi" checked class="absolute right-2 top-2 accent-green-600">
-                                <span class="text-xs font-bold text-gray-800">Pagi (06.00 - 09.00)</span>
-                            </label>
-                            <label class="relative flex flex-col p-2.5 bg-white border border-gray-200 rounded-lg cursor-pointer">
-                                <input type="radio" name="shipping-slot" value="siang" class="absolute right-2 top-2 accent-green-600">
-                                <span class="text-xs font-bold text-gray-800">Siang (10.00 - 13.00)</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Pembayaran -->
-                    <div class="border border-gray-100 rounded-xl p-4 bg-white text-xs space-y-2">
-                        <div class="flex justify-between text-gray-500">
-                            <span>Subtotal</span>
-                            <span id="price-subtotal">Rp0</span>
-                        </div>
-                        <div class="flex justify-between text-gray-500">
-                            <span>Ongkos Kirim</span>
-                            <span class="text-green-600">Gratis</span>
-                        </div>
-                        <div class="border-t border-dashed my-2 pt-2 flex justify-between font-bold text-sm text-gray-800">
-                            <span>Total Pembayaran</span>
-                            <span id="price-total" class="text-green-600">Rp0</span>
-                        </div>
-                    </div>
-
-                    <button onclick="processCheckout()" class="w-full bg-green-600 text-white font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 btn-active shadow-lg shadow-green-100 text-sm">
-                        <span>Bayar Sekarang</span>
-                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            <div class="px-4 py-2">
+                <h3 class="text-sm font-bold text-gray-800 mb-3">Kategori Belanja</h3>
+                <div class="grid grid-cols-4 gap-3">
+                    <button class="flex flex-col items-center gap-1 bg-green-50 p-2 rounded-xl border border-green-100 transition btn-active">
+                        <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white"><i data-lucide="layout-grid" class="w-5 h-5"></i></div>
+                        <span class="text-[11px] font-bold text-gray-700 text-center">Semua</span>
                     </button>
-                </div>
-            </main>
-
-            <!-- Halaman Profil & Dashboard Konsumen -->
-            <main id="profile-page" class="hidden flex-grow px-4 pt-3 bg-gray-50">
-                <!-- Tampilan Belum Login -->
-                <div id="unauth-view" class="space-y-4">
-                    <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center">
-                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                            <i data-lucide="user-x" class="w-8 h-8 text-gray-400"></i>
-                        </div>
-                        <h3 class="font-bold text-gray-800 mb-1">Belum Masuk</h3>
-                        <p class="text-xs text-gray-500 mb-4">Akses semua fitur menarik setelah login.</p>
-                        <div class="space-y-2">
-                            <button onclick="openModal('konsumen-login')" class="w-full bg-green-600 text-white py-2.5 rounded-xl text-sm font-bold btn-active flex justify-center items-center gap-2">
-                                <i data-lucide="shopping-bag" class="w-4 h-4"></i> Masuk Konsumen
-                            </button>
-                            <button onclick="openModal('toko-register')" class="w-full bg-orange-500 text-white py-2.5 rounded-xl text-sm font-bold btn-active flex justify-center items-center gap-2">
-                                <i data-lucide="store" class="w-4 h-4"></i> Daftar Mitra Toko
-                            </button>
-                            <button onclick="openModal('admin-login')" class="w-full bg-gray-800 text-white py-2.5 rounded-xl text-sm font-bold btn-active flex justify-center items-center gap-2">
-                                <i data-lucide="shield" class="w-4 h-4"></i> Login Admin
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tampilan Dashboard Konsumen (Sudah Login) -->
-                <div id="auth-view" class="hidden space-y-4">
-                    <!-- Kartu Member Konsumen -->
-                    <div class="bg-gradient-to-r from-green-600 to-emerald-700 text-white p-5 rounded-2xl shadow-sm relative overflow-hidden">
-                        <div class="flex justify-between items-start mb-4 z-10 relative">
-                            <div>
-                                <span class="bg-green-500/30 text-green-200 text-[10px] font-extrabold px-2 py-0.5 rounded-full tracking-wider">MEMBER SILVER</span>
-                                <h3 id="auth-name" class="font-bold text-lg mt-1">Nama User</h3>
-                            </div>
-                            <button onclick="doLogout()" class="bg-white/20 text-white p-2 rounded-lg btn-active">
-                                <i data-lucide="log-out" class="w-4 h-4"></i>
-                            </button>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4 pt-2 border-t border-white/20 z-10 relative">
-                            <div>
-                                <p class="text-[10px] text-green-200">Saldo SegariPay</p>
-                                <p class="font-black text-sm">Rp150.000</p>
-                            </div>
-                            <div>
-                                <p class="text-[10px] text-green-200">SegariPoints</p>
-                                <p class="font-black text-sm flex items-center gap-1">
-                                    <i data-lucide="sparkles" class="w-3.5 h-3.5 text-yellow-300"></i> 450 Pts
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Riwayat Transaksi & Pelacakan Kurir Aktif -->
-                    <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                        <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Pesanan Aktif & Pelacakan</h3>
-                        <div id="consumer-orders-list" class="space-y-3">
-                            <!-- Dimuat dinamis -->
-                        </div>
-                    </div>
-                </div>
-            </main>
-
-            <!-- ================= HALAMAN TRANSAKSI / PELACAKAN LIVE ================= -->
-            <main id="tracking-page" class="hidden flex-grow px-4 pt-3 pb-6">
-                <div class="flex items-center gap-2 mb-3">
-                    <button onclick="switchTab('profile')" class="p-1 text-gray-500 hover:text-gray-800">
-                        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                    <button class="flex flex-col items-center gap-1 bg-gray-50 p-2 rounded-xl transition btn-active">
+                        <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600"><i data-lucide="leaf" class="w-5 h-5"></i></div>
+                        <span class="text-[11px] font-medium text-gray-600 text-center">Sayuran</span>
                     </button>
-                    <h2 class="text-lg font-bold text-gray-800 flex items-center gap-1.5">
-                        <i data-lucide="map" class="text-green-600"></i> Lacak Pesanan
-                    </h2>
-                </div>
-
-                <div class="bg-white border border-gray-100 rounded-2xl p-4 mb-4 shadow-sm">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <p class="text-[10px] text-gray-400 uppercase tracking-wider font-bold">No. Transaksi</p>
-                            <h4 id="tracking-invoice-id" class="text-xs font-bold text-gray-800 font-mono">SGR-20260601-XXXXX</h4>
-                        </div>
-                        <span id="tracking-status-badge" class="bg-yellow-100 text-yellow-700 text-[10px] font-bold px-2 py-1 rounded-full">
-                            Menyiapkan Pesanan
-                        </span>
-                    </div>
-
-                    <!-- Live Map Simulation (SVG Map) -->
-                    <div class="bg-slate-100 h-44 rounded-xl relative overflow-hidden mb-4 border border-slate-200">
-                        <!-- Simulasi Jalanan Grid -->
-                        <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(circle, #000 10%, transparent 10%), radial-gradient(circle, #000 10%, transparent 10%); background-size: 20px 20px; background-position: 0 0, 10px 10px;"></div>
-                        <div class="absolute w-full h-1 bg-white top-1/2 -translate-y-1/2"></div>
-                        <div class="absolute w-1 h-full bg-white left-1/3"></div>
-                        <div class="absolute w-1 h-full bg-white left-2/3"></div>
-
-                        <!-- Toko Segari (Hub) -->
-                        <div class="absolute left-[20%] top-[35%] flex flex-col items-center">
-                            <div class="bg-green-600 text-white p-1 rounded-full shadow-lg">
-                                <i data-lucide="store" class="w-4 h-4"></i>
-                            </div>
-                            <span class="text-[8px] bg-white px-1 rounded shadow text-gray-700 mt-1 font-bold">Mitra Toko</span>
-                        </div>
-
-                        <!-- Rumah Anda -->
-                        <div class="absolute left-[75%] top-[60%] flex flex-col items-center">
-                            <div class="bg-blue-600 text-white p-1 rounded-full shadow-lg">
-                                <i data-lucide="home" class="w-4 h-4"></i>
-                            </div>
-                            <span class="text-[8px] bg-white px-1 rounded shadow text-gray-700 mt-1 font-bold">Rumah Saya</span>
-                        </div>
-
-                        <!-- Kurir Motor -->
-                        <div id="courier-icon" class="absolute left-[20%] top-[45%] flex flex-col items-center transition-all duration-1000 ease-in-out">
-                            <div class="bg-orange-500 text-white p-1 rounded-full shadow-lg animate-bounce">
-                                <i data-lucide="bike" class="w-4 h-4"></i>
-                            </div>
-                            <span class="text-[8px] bg-orange-100 text-orange-700 px-1 rounded shadow mt-1 font-bold">Pak Kurir</span>
-                        </div>
-                    </div>
-
-                    <!-- Informasi Kurir -->
-                    <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                        <div class="w-9 h-9 rounded-full bg-green-100 text-green-700 overflow-hidden flex items-center justify-center font-bold text-sm">
-                            <i data-lucide="user"></i>
-                        </div>
-                        <div class="flex-grow">
-                            <h4 class="text-xs font-bold text-gray-800">Ahmad Hidayat</h4>
-                            <p class="text-[9px] text-gray-400">Driver Mitra Segari - Honda Vario (B 4913 SGR)</p>
-                        </div>
-                        <button onclick="showMessage('Menghubungi Pak Kurir melalui WhatsApp...')" class="bg-green-50 hover:bg-green-100 text-green-600 p-2 rounded-full border border-green-100 btn-active">
-                            <i data-lucide="phone" class="w-3.5 h-3.5"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Detail Alur Status (Timeline) -->
-                <div class="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
-                    <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Linimasa Pengiriman</h3>
-                    <div class="space-y-4">
-                        <!-- Step 1 -->
-                        <div class="flex gap-3">
-                            <div class="flex flex-col items-center">
-                                <div id="tracking-node-1" class="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs">
-                                    <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                                </div>
-                                <div id="tracking-line-1" class="w-0.5 h-10 bg-gray-200"></div>
-                            </div>
-                            <div>
-                                <h4 class="text-xs font-bold text-gray-800">Pesanan Diterima</h4>
-                                <p class="text-[10px] text-gray-400 mt-0.5">Sistem telah memverifikasi pembayaran Anda.</p>
-                            </div>
-                        </div>
-                        <!-- Step 2 -->
-                        <div class="flex gap-3">
-                            <div class="flex flex-col items-center">
-                                <div id="tracking-node-2" class="w-6 h-6 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center text-xs font-bold">
-                                    2
-                                </div>
-                                <div id="tracking-line-2" class="w-0.5 h-10 bg-gray-200"></div>
-                            </div>
-                            <div>
-                                <h4 id="tracking-title-2" class="text-xs font-bold text-gray-400">Menyiapkan Pesanan</h4>
-                                <p class="text-[10px] text-gray-400 mt-0.5">Tim Mitra Toko sedang memilah dan mengemas bahan segar Anda.</p>
-                            </div>
-                        </div>
-                        <!-- Step 3 -->
-                        <div class="flex gap-3">
-                            <div class="flex flex-col items-center">
-                                <div id="tracking-node-3" class="w-6 h-6 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center text-xs font-bold">
-                                    3
-                                </div>
-                            </div>
-                            <div>
-                                <h4 id="tracking-title-3" class="text-xs font-bold text-gray-400">Dalam Perjalanan</h4>
-                                <p class="text-[10px] text-gray-400 mt-0.5">Kurir membawa bahan segar pesanan Anda menuju ke lokasi tujuan.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </main>
-        </div>
-
-        <!-- ================= DASHBOARD MITRA TOKO ================= -->
-        <div id="toko-views" class="hidden flex-grow flex flex-col px-4 pt-3">
-            <!-- Tab Toko: Ringkasan Stats -->
-            <main id="toko-dashboard-tab" class="space-y-4 pb-6">
-                
-                <!-- ================= PREMIUM SUBSCRIPTION CARD (HANYA DI DASHBOARD TOKO) ================= -->
-                <div id="toko-subscription-card" class="rounded-2xl p-4 text-white relative overflow-hidden shadow-md transition-all">
-                    <!-- Dimuat dinamis lewat JS render (Eksklusif Internal Toko) -->
-                </div>
-
-                <!-- Header Analytics & Filter Segment -->
-                <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-3.5">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Ringkasan Analisis</h3>
-                            <p class="text-[10px] text-orange-600 font-medium">Berdasarkan waktu filter teraktif</p>
-                        </div>
-                        <div class="p-1 bg-orange-100 rounded-lg text-orange-600">
-                            <i data-lucide="trending-up" class="w-4 h-4"></i>
-                        </div>
-                    </div>
-
-                    <!-- Segmented Timeframe Filter -->
-                    <div class="bg-gray-100 p-1 rounded-xl flex gap-1 text-xs">
-                        <button onclick="setTokoFilter('hari')" id="btn-filter-hari" class="flex-1 py-1.5 rounded-lg text-center font-bold bg-white text-orange-600 shadow-sm transition">Hari</button>
-                        <button onclick="setTokoFilter('minggu')" id="btn-filter-minggu" class="flex-1 py-1.5 rounded-lg text-center font-medium text-gray-500 hover:text-gray-800 transition">Minggu</button>
-                        <button onclick="setTokoFilter('bulan')" id="btn-filter-bulan" class="flex-1 py-1.5 rounded-lg text-center font-medium text-gray-500 hover:text-gray-800 transition">Bulan</button>
-                        <button onclick="setTokoFilter('tahun')" id="btn-filter-tahun" class="flex-1 py-1.5 rounded-lg text-center font-medium text-gray-500 hover:text-gray-800 transition">Tahun</button>
-                    </div>
-
-                    <!-- Stats Cards Grid -->
-                    <div class="grid grid-cols-2 gap-3 pt-1">
-                        <div class="bg-gradient-to-br from-orange-50 to-orange-100/50 p-3 rounded-xl border border-orange-100">
-                            <span class="text-gray-500 text-[9px] font-bold block uppercase tracking-wider">Omset Pendapatan</span>
-                            <span id="toko-stat-revenue" class="text-orange-600 font-black text-sm block mt-1">Rp0</span>
-                        </div>
-                        <div class="bg-gradient-to-br from-blue-50 to-blue-100/50 p-3 rounded-xl border border-blue-100">
-                            <span class="text-gray-500 text-[9px] font-bold block uppercase tracking-wider">Volume Transaksi</span>
-                            <span id="toko-stat-orders" class="text-blue-600 font-black text-sm block mt-1">0 Pesanan</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Kelola Produk Toko -->
-                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm space-y-4">
-                    <div class="flex justify-between items-center">
-                        <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider">Katalog Produk Toko</h3>
-                        <button onclick="openAddProductModal()" class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 btn-active transition">
-                            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Tambah Produk
-                        </button>
-                    </div>
-                    <div id="toko-products-list" class="space-y-2">
-                        <!-- Dimuat dinamis -->
-                    </div>
-                </div>
-
-                <!-- Kelola Pesanan Toko -->
-                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm space-y-4">
-                    <div>
-                        <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider">Daftar Transaksi Toko</h3>
-                        <p class="text-[9px] text-gray-400 mt-0.5">Menampilkan seluruh riwayat berdasarkan filter terpilih</p>
-                    </div>
-                    <div id="toko-orders-list" class="space-y-3">
-                        <!-- Dimuat dinamis -->
-                    </div>
-                </div>
-            </main>
-        </div>
-
-        <!-- ================= DASHBOARD ADMIN PANEL ================= -->
-        <div id="admin-views" class="hidden flex-grow flex flex-col px-4 pt-3">
-            <main class="space-y-4">
-                <!-- Statistik Platform Global -->
-                <div class="grid grid-cols-3 gap-2">
-                    <div class="bg-gray-50 p-3 rounded-xl border border-gray-200 text-center">
-                        <span class="text-gray-400 text-[8px] font-bold uppercase block">Total GMV</span>
-                        <span id="admin-stat-gmv" class="font-extrabold text-xs text-gray-800 block mt-1">Rp24.5M</span>
-                    </div>
-                    <div class="bg-green-50 p-3 rounded-xl border border-green-100 text-center">
-                        <span class="text-green-600 text-[8px] font-bold uppercase block">Mitra Aktif</span>
-                        <span id="admin-stat-stores" class="font-extrabold text-xs text-green-700 block mt-1">48 Toko</span>
-                    </div>
-                    <div class="bg-blue-50 p-3 rounded-xl border border-blue-100 text-center">
-                        <span class="text-blue-600 text-[8px] font-bold uppercase block">User</span>
-                        <span class="font-extrabold text-xs text-blue-700 block mt-1">1.4K</span>
-                    </div>
-                </div>
-
-                <!-- Approval Pendaftaran Mitra Toko Baru -->
-                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm space-y-3">
-                    <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider">Persetujuan Pendaftaran Toko</h3>
-                    <div id="admin-approvals-list" class="space-y-3">
-                        <!-- Dimuat dinamis -->
-                    </div>
-                </div>
-
-                <!-- Transaksi Platform Terkini -->
-                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm space-y-3">
-                    <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider">Transaksi Global Platform</h3>
-                    <div id="admin-transactions-list" class="space-y-2">
-                        <!-- Dimuat dinamis -->
-                    </div>
-                </div>
-            </main>
-        </div>
-
-        <!-- ================= BOTTOM NAVIGATION KONSUMEN ================= -->
-        <nav id="nav-konsumen" class="fixed bottom-0 w-full bg-white border-t border-gray-100 flex justify-around py-3 px-2 z-40 pb-5 max-w-[480px] mx-auto">
-            <button onclick="switchTab('home')" class="nav-btn flex flex-col items-center text-green-600 w-16" data-target="home-page">
-                <i data-lucide="home" class="w-6 h-6 mb-1"></i>
-                <span class="text-[10px] font-semibold">Beranda</span>
-            </button>
-            <button onclick="switchTab('promo')" class="nav-btn flex flex-col items-center text-gray-400 w-16 hover:text-green-600" data-target="promo-page">
-                <i data-lucide="ticket" class="w-6 h-6 mb-1"></i>
-                <span class="text-[10px] font-medium">Promo</span>
-            </button>
-            <button onclick="switchTab('cart')" class="nav-btn relative flex flex-col items-center text-gray-400 w-16 hover:text-green-600" data-target="cart-page">
-                <i data-lucide="shopping-cart" class="w-6 h-6 mb-1"></i>
-                <span class="text-[10px] font-medium">Keranjang</span>
-                <span id="cart-badge" class="absolute top-0 right-3 bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full">0</span>
-            </button>
-            <button onclick="switchTab('profile')" class="nav-btn flex flex-col items-center text-gray-400 w-16 hover:text-green-600" data-target="profile-page">
-                <i data-lucide="user" class="w-6 h-6 mb-1"></i>
-                <span class="text-[10px] font-medium">Profil</span>
-            </button>
-        </nav>
-
-        <!-- ================= MODAL AUTH & ACTION OVERLAYS ================= -->
-        <div id="auth-modal" class="hidden fixed inset-0 z-50 bg-black/50 flex flex-col justify-end max-w-[480px] mx-auto">
-            <div class="bg-white rounded-t-3xl w-full p-6 modal-enter relative max-h-[90vh] overflow-y-auto no-scrollbar">
-                <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-                    <i data-lucide="x" class="w-6 h-6"></i>
-                </button>
-
-                <!-- FORM LOGIN KONSUMEN -->
-                <div id="form-konsumen-login" class="hidden auth-form">
-                    <h2 class="text-xl font-bold text-gray-800 mb-1">Masuk Konsumen</h2>
-                    <p class="text-xs text-gray-500 mb-5">Gunakan akun konsumen Anda untuk memproses pesanan belanja.</p>
-                    <input type="text" id="login-email" placeholder="Email / No. HP (John Doe)" class="w-full mb-3 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-green-500" value="John Doe">
-                    <input type="password" placeholder="Password" class="w-full mb-5 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-green-500" value="12345">
-                    <button onclick="doLogin('konsumen', document.getElementById('login-email').value)" class="w-full bg-green-600 text-white py-3 rounded-xl font-bold text-sm btn-active">Login</button>
-                </div>
-
-                <!-- FORM REGISTRASI TOKO -->
-                <div id="form-toko-register" class="hidden auth-form">
-                    <h2 class="text-xl font-bold text-orange-600 mb-1">Daftar Mitra Toko Baru</h2>
-                    <p class="text-xs text-gray-500 mb-5">Daftarkan toko sayur & buah Anda untuk mulai berjualan.</p>
-                    <input type="text" id="reg-toko-name" placeholder="Nama Toko (Contoh: Organik Fresh Mart)" class="w-full mb-3 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-orange-500">
-                    <input type="text" id="reg-toko-owner" placeholder="Nama Pemilik" class="w-full mb-3 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-orange-500">
-                    <input type="password" placeholder="Buat Password Toko" class="w-full mb-5 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-orange-500">
-                    <button onclick="submitTokoRegistration()" class="w-full bg-orange-500 text-white py-3 rounded-xl font-bold text-sm btn-active">Daftar Sekarang</button>
-                    <p class="text-center text-xs mt-3 text-gray-500">Sudah daftar? <a href="#" onclick="openModal('toko-login')" class="text-orange-500 font-bold">Login disini</a></p>
-                </div>
-
-                <!-- FORM LOGIN TOKO -->
-                <div id="form-toko-login" class="hidden auth-form">
-                    <h2 class="text-xl font-bold text-orange-600 mb-1">Login Mitra Toko</h2>
-                    <p class="text-xs text-gray-500 mb-5">Masuk ke pusat dashboard manajemen operasional toko Anda.</p>
-                    <input type="text" id="login-toko-name" placeholder="Nama Toko" class="w-full mb-3 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-orange-500" value="Toko Segar Makmur">
-                    <input type="password" placeholder="Password" class="w-full mb-5 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-orange-500" value="12345">
-                    <button onclick="doLogin('toko', document.getElementById('login-toko-name').value)" class="w-full bg-orange-500 text-white py-3 rounded-xl font-bold text-sm btn-active">Login Toko</button>
-                </div>
-
-                <!-- FORM LOGIN ADMIN -->
-                <div id="form-admin-login" class="hidden auth-form">
-                    <h2 class="text-xl font-bold text-gray-800 mb-1">Admin Panel</h2>
-                    <p class="text-xs text-gray-500 mb-5">Khusus staff internal pengawasan Segari.</p>
-                    <input type="text" id="login-admin-user" placeholder="Username Admin (Super Admin)" class="w-full mb-3 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-gray-800" value="Super Admin">
-                    <input type="password" placeholder="Kode Rahasia Admin" class="w-full mb-5 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-gray-800" value="admin123">
-                    <button onclick="doLogin('admin', document.getElementById('login-admin-user').value)" class="w-full bg-gray-800 text-white py-3 rounded-xl font-bold text-sm btn-active">Login Admin</button>
-                </div>
-
-                <!-- FORM TAMBAH PRODUK TOKO -->
-                <div id="form-add-product" class="hidden auth-form">
-                    <h2 class="text-xl font-bold text-orange-600 mb-1">Tambah Produk Toko</h2>
-                    <p class="text-xs text-gray-500 mb-4">Tambahkan item buah atau sayur segar agar dapat dilihat pembeli.</p>
-                    <input type="text" id="p-name" placeholder="Nama Produk (misal: Jeruk Nipis)" class="w-full mb-3 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-orange-500">
-                    <input type="number" id="p-price" placeholder="Harga (Rp)" class="w-full mb-3 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-orange-500">
-                    <input type="text" id="p-unit" placeholder="Satuan (misal: 500 gr)" class="w-full mb-3 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-orange-500">
-                    <select id="p-category" class="w-full mb-5 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-orange-500">
-                        <option value="sayur">Sayuran</option>
-                        <option value="buah">Buah</option>
-                        <option value="daging">Daging</option>
-                    </select>
-                    <button onclick="submitAddProduct()" class="w-full bg-orange-500 text-white py-3 rounded-xl font-bold text-sm btn-active">Terbitkan Produk</button>
-                </div>
-
-                <!-- ================= MODAL KELOLA BERLANGGANAN TOKO (AKSES DARI DASBOARD INTERNAL TOKO) ================= -->
-                <div id="form-toko-subscription" class="hidden auth-form">
-                    <h2 class="text-xl font-black text-gray-900 mb-1 flex items-center gap-1.5">
-                        <i data-lucide="crown" class="text-yellow-500 fill-yellow-400"></i> Paket Langsung Premium
-                    </h2>
-                    <p class="text-xs text-gray-500 mb-5">Tingkatkan performa penjualan toko dengan fitur tercanggih.</p>
-                    
-                    <div class="space-y-3.5 mb-6">
-                        <!-- Paket Pro -->
-                        <div onclick="selectSubPlan('Pro')" id="plan-card-Pro" class="border-2 border-orange-500 bg-orange-50/40 p-4 rounded-xl cursor-pointer transition relative">
-                            <div class="absolute top-3 right-3 bg-orange-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded">TERPOPULER</div>
-                            <div class="flex items-center gap-2">
-                                <span class="p-1.5 bg-orange-100 text-orange-600 rounded-lg">
-                                    <i data-lucide="zap" class="w-4 h-4"></i>
-                                </span>
-                                <div>
-                                    <h4 class="font-extrabold text-xs text-gray-800">Mitra Pro</h4>
-                                    <p class="text-[10px] text-gray-400">Komisi 1.0% | Prioritas Analitik | Dukungan Cepat</p>
-                                </div>
-                            </div>
-                            <div class="mt-2 text-right font-black text-xs text-orange-600">Rp99.000 <span class="text-[9px] font-medium text-gray-400">/ bln</span></div>
-                        </div>
-
-                        <!-- Paket Platinum -->
-                        <div onclick="selectSubPlan('Platinum')" id="plan-card-Platinum" class="border border-gray-200 p-4 rounded-xl cursor-pointer hover:border-violet-400 transition relative">
-                            <div class="flex items-center gap-2">
-                                <span class="p-1.5 bg-violet-100 text-violet-600 rounded-lg">
-                                    <i data-lucide="gem" class="w-4 h-4"></i>
-                                </span>
-                                <div>
-                                    <h4 class="font-extrabold text-xs text-gray-800">Mitra Platinum</h4>
-                                    <p class="text-[10px] text-gray-400">Bebas Komisi 0% | Kustom Voucher Toko | Dukungan VIP</p>
-                                </div>
-                            </div>
-                            <div class="mt-2 text-right font-black text-xs text-violet-600">Rp199.000 <span class="text-[9px] font-medium text-gray-400">/ bln</span></div>
-                        </div>
-                    </div>
-
-                    <div class="bg-gray-50 p-3 rounded-xl border border-gray-200 text-[10px] text-gray-500 mb-5 flex items-start gap-2">
-                        <i data-lucide="shield-alert" class="w-4 h-4 text-orange-500 shrink-0"></i>
-                        <span>Pembayaran akan didebet secara instan melalui saldo SegariPay Toko Anda secara virtual untuk memverifikasi lisensi.</span>
-                    </div>
-
-                    <button onclick="processSubscriptionPayment()" class="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white py-3.5 rounded-xl font-black text-xs btn-active flex justify-center items-center gap-1.5">
-                        <i data-lucide="credit-card" class="w-4 h-4"></i> Bayar & Aktifkan Paket
+                    <button class="flex flex-col items-center gap-1 bg-gray-50 p-2 rounded-xl transition btn-active">
+                        <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-500"><i data-lucide="apple" class="w-5 h-5"></i></div>
+                        <span class="text-[11px] font-medium text-gray-600 text-center">Buah</span>
+                    </button>
+                    <button class="flex flex-col items-center gap-1 bg-gray-50 p-2 rounded-xl transition btn-active">
+                        <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-500"><i data-lucide="beef" class="w-5 h-5"></i></div>
+                        <span class="text-[11px] font-medium text-gray-600 text-center">Daging</span>
                     </button>
                 </div>
             </div>
-        </div>
+
+            <div class="bg-orange-50 px-4 py-4 my-4">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="bg-orange-500 text-white font-bold text-xs px-2.5 py-1 rounded-md tracking-wider flex items-center gap-1">
+                        <i data-lucide="zap" class="w-3.5 h-3.5 fill-current"></i> FLASH SALE
+                    </span>
+                </div>
+                <div class="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+                    <div class="bg-white rounded-xl p-2.5 min-w-[135px] border border-orange-100 flex flex-col justify-between shadow-sm">
+                        <div>
+                            <h4 class="text-xs font-semibold text-gray-800 truncate">Jeruk Santang Segar</h4>
+                            <div class="text-xs font-bold text-orange-500">Rp19.500</div>
+                        </div>
+                        <button onclick="handleAddToCart('Jeruk Santang')" class="w-full mt-2 bg-green-600 text-white py-1 rounded-lg text-[11px] font-bold btn-active transition flex items-center justify-center gap-1">
+                            <i data-lucide="plus" class="w-3 h-3"></i> Beli
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <main id="cart-page" class="hidden flex-grow px-4 pt-3 overflow-y-auto">
+            <h2 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                <i data-lucide="shopping-cart" class="text-green-600"></i> Keranjang Belanja
+            </h2>
+            <div id="cart-active-state" class="space-y-3">
+                <div class="bg-white border border-gray-100 p-3 rounded-xl flex justify-between items-center shadow-sm">
+                    <div>
+                        <h4 class="text-xs font-bold text-gray-800" id="cart-item-title">Belum ada barang</h4>
+                        <p class="text-[10px] text-gray-400">1 Pack</p>
+                    </div>
+                    <span class="text-xs font-bold text-green-600" id="cart-item-price">Rp0</span>
+                </div>
+                <button onclick="processCheckout()" class="w-full bg-green-600 text-white font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 btn-active text-sm shadow-md mt-4">
+                    <span>Bayar Sekarang</span> <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </main>
+
+        <main id="promo-page" class="hidden flex-grow px-4 pt-3 overflow-y-auto">
+            <h2 class="text-lg font-bold text-gray-800 mb-1 flex items-center gap-1.5">
+                <i data-lucide="badge-percent" class="text-orange-500"></i> Voucher & Promo
+            </h2>
+            <div class="bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl p-4 text-white mt-4">
+                <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">PENGGUNA BARU</span>
+                <h3 class="text-md font-black mt-2">Diskon Langsung Rp15.000</h3>
+            </div>
+        </main>
+
+        <main id="tracking-page" class="hidden flex-grow px-4 pt-3 overflow-y-auto">
+            <h2 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-1.5">
+                <i data-lucide="map" class="text-green-600"></i> Lacak Pesanan
+            </h2>
+            <div class="bg-white border border-gray-100 rounded-2xl p-4 text-center">
+                <p class="text-xs text-gray-500">Gunakan Akun Konsumen untuk berbelanja dan melacak pesanan.</p>
+            </div>
+        </main>
+
+        <main id="profile-page" class="hidden flex-grow px-4 pt-5 overflow-y-auto">
+            <div class="flex items-center gap-3 bg-gradient-to-r from-green-600 to-emerald-700 p-4 rounded-2xl text-white mb-6 shadow-sm">
+                <div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center"><i data-lucide="user" class="w-6 h-6"></i></div>
+                <div>
+                    <h3 class="font-bold text-sm" id="user-status-title">Belum Login</h3>
+                    <p class="text-xs text-green-100" id="user-status-role">Silahkan pilih portal hak akses di bawah</p>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Pilih Portal Akses</h4>
+                
+                <button onclick="navigateToLogin('konsumen')" class="w-full flex items-center justify-between p-3.5 bg-gray-50 border border-gray-100 rounded-xl hover:bg-green-50/50 transition text-left btn-active">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-green-100 text-green-600 rounded-lg"><i data-lucide="shopping-bag" class="w-5 h-5"></i></div>
+                        <div>
+                            <h4 class="text-xs font-bold text-gray-800">Masuk Sebagai Konsumen</h4>
+                            <p class="text-[10px] text-gray-500">Portal belanja sayur dan buah segar harian</p>
+                        </div>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
+                </button>
+
+                <button onclick="navigateToLogin('toko')" class="w-full flex items-center justify-between p-3.5 bg-gray-50 border border-gray-100 rounded-xl hover:bg-orange-50/50 transition text-left btn-active">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-orange-100 text-orange-500 rounded-lg"><i data-lucide="store" class="w-5 h-5"></i></div>
+                        <div>
+                            <h4 class="text-xs font-bold text-gray-800">Dashboard Mitra Toko</h4>
+                            <p class="text-[10px] text-gray-500">Kelola stok produk, pesanan toko, dan omzet</p>
+                        </div>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
+                </button>
+
+                <button onclick="navigateToLogin('admin')" class="w-full flex items-center justify-between p-3.5 bg-gray-50 border border-gray-100 rounded-xl hover:bg-blue-50/50 transition text-left btn-active">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-blue-100 text-blue-600 rounded-lg"><i data-lucide="shield-check" class="w-5 h-5"></i></div>
+                        <div>
+                            <h4 class="text-xs font-bold text-gray-800">Portal Utama Admin</h4>
+                            <p class="text-[10px] text-gray-500">Manajemen user, sistem aplikasi, dan verifikasi</p>
+                        </div>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
+                </button>
+
+                <button onclick="handleLogout()" id="logout-btn" class="hidden w-full text-center py-3 bg-red-50 text-red-600 rounded-xl font-bold text-xs mt-6 border border-red-100 btn-active">
+                    Keluar Akun
+                </button>
+            </div>
+        </main>
+
+        <main id="login-konsumen-page" class="hidden flex-grow px-6 pt-10">
+            <div class="text-center mb-8">
+                <span class="text-3xl font-black text-green-600">se<span class="text-orange-500">gari</span></span>
+                <h3 class="text-md font-bold text-gray-800 mt-4">Masuk Portal Konsumen</h3>
+                <p class="text-xs text-gray-400 mt-1">Silahkan masuk untuk melanjutkan pemesanan dapur Anda</p>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Email / Nomor HP</label>
+                    <input type="text" value="konsumen@segari.com" class="w-full p-3 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/20" />
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Password</label>
+                    <input type="password" value="123456" class="w-full p-3 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/20" />
+                </div>
+                <button onclick="submitLogin('konsumen')" class="w-full bg-green-600 text-white font-bold py-3.5 rounded-xl text-xs btn-active shadow-sm shadow-green-200">Masuk & Belanja</button>
+                <button onclick="switchTab('home')" class="w-full text-center text-xs text-gray-500 font-medium pt-2 block">Kembali ke Beranda</button>
+            </div>
+        </main>
+
+        <main id="login-toko-page" class="hidden flex-grow px-6 pt-10">
+            <div class="text-center mb-8">
+                <span class="text-3xl font-black text-orange-500">mitra<span class="text-green-600">segari</span></span>
+                <h3 class="text-md font-bold text-gray-800 mt-4">Login Dashboard Mitra Toko</h3>
+                <p class="text-xs text-gray-400 mt-1">Akses kelola penjualan komoditas & stok toko Anda</p>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">ID Kemitraan / Email Toko</label>
+                    <input type="text" value="tokosubur@segari.com" class="w-full p-3 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Password Mitra</label>
+                    <input type="password" value="123456" class="w-full p-3 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                </div>
+                <button onclick="submitLogin('toko')" class="w-full bg-orange-500 text-white font-bold py-3.5 rounded-xl text-xs btn-active shadow-sm shadow-orange-200">Masuk Dashboard Toko</button>
+                <button onclick="switchTab('profile')" class="w-full text-center text-xs text-gray-500 font-medium pt-2 block">Kembali ke Menu Profil</button>
+            </div>
+        </main>
+
+        <main id="login-admin-page" class="hidden flex-grow px-6 pt-10">
+            <div class="text-center mb-8">
+                <span class="text-2xl font-black text-blue-700 tracking-wider">ADMIN PANEL</span>
+                <h3 class="text-md font-bold text-gray-800 mt-4">Autentikasi Administrator</h3>
+                <p class="text-xs text-gray-400 mt-1">Sistem Keamanan internal. Seluruh aktivitas dicatat.</p>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Username Admin</label>
+                    <input type="text" value="admin.utama" class="w-full p-3 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Security Key Token</label>
+                    <input type="password" value="admin123" class="w-full p-3 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
+                </div>
+                <button onclick="submitLogin('admin')" class="w-full bg-blue-700 text-white font-bold py-3.5 rounded-xl text-xs btn-active shadow-sm shadow-blue-200">Verifikasi & Masuk</button>
+                <button onclick="switchTab('profile')" class="w-full text-center text-xs text-gray-500 font-medium pt-2 block">Kembali ke Menu Profil</button>
+            </div>
+        </main>
+
+        <main id="dashboard-toko-page" class="hidden flex-grow px-4 pt-4 bg-gray-50 overflow-y-auto">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-base font-black text-gray-800 flex items-center gap-1.5"><i data-lucide="store" class="text-orange-500"></i> Toko Subur Makmur</h2>
+                    <p class="text-[10px] text-gray-400">ID Mitra: #SGR-99211</p>
+                </div>
+                <button onclick="handleLogout()" class="text-[10px] bg-red-100 text-red-600 px-3 py-1 rounded-full font-bold btn-active">Keluar Dashboard</button>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="bg-white border p-3 rounded-xl shadow-sm">
+                    <span class="text-[10px] font-bold text-gray-400 uppercase">Omzet Hari Ini</span>
+                    <h3 class="text-sm font-black text-gray-800 mt-1 text-orange-500">Rp2.450.000</h3>
+                </div>
+                <div class="bg-white border p-3 rounded-xl shadow-sm">
+                    <span class="text-[10px] font-bold text-gray-400 uppercase">Pesanan Baru</span>
+                    <h3 class="text-sm font-black text-gray-800 mt-1 text-green-600">14 Pesanan</h3>
+                </div>
+            </div>
+            <div class="bg-white border rounded-xl p-3 space-y-2 shadow-sm">
+                <h4 class="text-xs font-bold text-gray-800 border-b pb-1.5 mb-2">Manajemen Stok Toko</h4>
+                <div class="flex justify-between items-center text-xs text-gray-600 py-1 border-b border-gray-100">
+                    <span>Bayam Organik (Ikat)</span>
+                    <span class="font-bold text-green-600">45 Unit</span>
+                </div>
+                <div class="flex justify-between items-center text-xs text-gray-600 py-1 border-b border-gray-100">
+                    <span>Jeruk Santang (Kg)</span>
+                    <span class="font-bold text-orange-500">12 Unit (Tipis)</span>
+                </div>
+            </div>
+        </main>
+
+        <main id="dashboard-admin-page" class="hidden flex-grow px-4 pt-4 bg-slate-900 text-slate-100 overflow-y-auto">
+            <div class="flex items-center justify-between mb-6 border-b border-slate-800 pb-3">
+                <div>
+                    <h2 class="text-sm font-black text-blue-400 flex items-center gap-1.5"><i data-lucide="shield-alert"></i> CENTRAL CONTROL APP</h2>
+                    <p class="text-[10px] text-slate-400">Superadmin: Active Session</p>
+                </div>
+                <button onclick="handleLogout()" class="text-[10px] bg-red-950 text-red-400 border border-red-900 px-3 py-1 rounded-full font-bold btn-active">Exit Secure Panel</button>
+            </div>
+            <div class="space-y-4 text-xs">
+                <div class="bg-slate-800 p-3 rounded-xl border border-slate-700">
+                    <h3 class="font-bold text-slate-300 mb-2">Ringkasan Sistem</h3>
+                    <div class="space-y-1 text-[11px]">
+                        <div class="flex justify-between"><span>Total User Terdaftar:</span><span class="font-bold text-white">128,459</span></div>
+                        <div class="flex justify-between"><span>Total Pengelola Toko:</span><span class="font-bold text-white">412 Mitra</span></div>
+                        <div class="flex justify-between"><span>Server Response Time:</span><span class="font-bold text-green-400">12ms (Optimal)</span></div>
+                    </div>
+                </div>
+                <div class="bg-slate-800 p-3 rounded-xl border border-slate-700">
+                    <h3 class="font-bold text-yellow-400 mb-2">Log Keamanan Terbaru</h3>
+                    <p class="font-mono text-[9px] text-slate-400 bg-black/40 p-2 rounded">
+                        [18:45:11] User #9011 Checkout Berhasil via Gateway-3<br>
+                        [18:50:02] Toko Subur Makmur update stok produk: Jeruk Santang
+                    </p>
+                </div>
+            </div>
+        </main>
+
+        <nav id="bottom-nav" class="fixed bottom-0 w-full max-w-[480px] bg-white border-t border-gray-200 flex justify-around items-center pb-safe pt-2 pb-2 z-40 shadow-[0_-5px_10px_rgba(0,0,0,0.02)]">
+            <button onclick="switchTab('home')" class="nav-btn flex flex-col items-center p-2 text-green-600 w-16 transition">
+                <i data-lucide="home" class="w-5 h-5 mb-1"></i>
+                <span class="text-[9px] font-semibold">Beranda</span>
+            </button>
+            <button onclick="switchTab('promo')" class="nav-btn flex flex-col items-center p-2 text-gray-400 hover:text-green-600 w-16 transition">
+                <i data-lucide="badge-percent" class="w-5 h-5 mb-1"></i>
+                <span class="text-[9px] font-medium">Promo</span>
+            </button>
+            <button onclick="switchTab('cart')" class="nav-btn relative flex flex-col items-center p-2 text-gray-400 hover:text-green-600 w-16 transition">
+                <div class="relative">
+                    <i data-lucide="shopping-cart" class="w-5 h-5 mb-1"></i>
+                    <span id="cart-badge" class="absolute -top-1 -right-2 bg-red-500 text-white text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center hidden border-2 border-white">0</span>
+                </div>
+                <span class="text-[9px] font-medium">Keranjang</span>
+            </button>
+            <button onclick="switchTab('tracking')" class="nav-btn flex flex-col items-center p-2 text-gray-400 hover:text-green-600 w-16 transition">
+                <i data-lucide="map" class="w-5 h-5 mb-1"></i>
+                <span class="text-[9px] font-medium">Status</span>
+            </button>
+            <button onclick="switchTab('profile')" class="nav-btn flex flex-col items-center p-2 text-gray-400 hover:text-green-600 w-16 transition">
+                <i data-lucide="user" class="w-5 h-5 mb-1"></i>
+                <span class="text-[9px] font-medium">Akun</span>
+            </button>
+        </nav>
 
     </div>
 
     <script>
-        // Data Produk Terdaftar secara default
-        let products = [
-            { id: 1, name: 'Wortel Berastagi', price: 6000, category: 'sayur', unit: '500 gr', img: 'https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?auto=format&fit=crop&q=80&w=300', store: 'Toko Segar Makmur' },
-            { id: 2, name: 'Apel Fuji Segar', price: 24000, category: 'buah', unit: '1 kg', img: 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?auto=format&fit=crop&q=80&w=300', store: 'Toko Segar Makmur' },
-            { id: 3, name: 'Jeruk Santang Segar', price: 19500, category: 'buah', unit: '500 gr', img: 'https://images.unsplash.com/photo-1557800636-894a64c1696f?auto=format&fit=crop&q=80&w=300', store: 'Toko Segar Makmur' }
-        ];
+        // State Global Aplikasi
+        let authenticatedRole = null; // Menyimpan status role login ('konsumen', 'toko', or 'admin')
+        let selectedProduct = null;   // Menyimpan barang yang ingin dibeli konsumen
 
-        // Keranjang belanja konsumen
-        let cart = [];
-
-        // Helper fungsi pembuat string tanggal relatif
-        const getRelativeDateStr = (daysAgo) => {
-            const d = new Date();
-            d.setDate(d.getDate() - daysAgo);
-            return d.toISOString().split('T')[0];
-        };
-
-        // Fungsi pembuat kode transaksi unik secara dinamis dan aman
-        const generateTransactionId = (customDate = null) => {
-            let year, month, date;
-            if (customDate) {
-                const parts = customDate.split('-');
-                year = parts[0];
-                month = parts[1];
-                date = parts[2];
-            } else {
-                const now = new Date();
-                year = now.getFullYear();
-                month = String(now.getMonth() + 1).padStart(2, '0');
-                date = String(now.getDate()).padStart(2, '0');
-            }
-            const randHex = Math.random().toString(36).substring(2, 7).toUpperCase();
-            return `SGR-${year}${month}${date}-${randHex}`;
-        };
-
-        // Database Pesanan Terstruktur Temporal (Mendukung filter analisis & Kode Transaksi Unik)
-        let orders = [
-            { 
-                id: generateTransactionId(getRelativeDateStr(0)), 
-                customerName: 'John Doe', 
-                totalPrice: 25500, 
-                status: 'Selesai', 
-                storeName: 'Toko Segar Makmur',
-                date: getRelativeDateStr(0), // Hari ini
-                items: [
-                    { name: 'Wortel Berastagi', qty: 1, price: 6000 },
-                    { name: 'Jeruk Santang', qty: 1, price: 19500 }
-                ]
-            },
-            { 
-                id: generateTransactionId(getRelativeDateStr(0)), 
-                customerName: 'John Doe', 
-                totalPrice: 30000, 
-                status: 'Menyiapkan Pesanan', 
-                storeName: 'Toko Segar Makmur',
-                date: getRelativeDateStr(0), // Hari ini
-                items: [
-                    { name: 'Apel Fuji Segar', qty: 1, price: 24000 },
-                    { name: 'Wortel Berastagi', qty: 1, price: 6000 }
-                ]
-            },
-            { 
-                id: generateTransactionId(getRelativeDateStr(4)), 
-                customerName: 'John Doe', 
-                totalPrice: 48000, 
-                status: 'Selesai', 
-                storeName: 'Toko Segar Makmur',
-                date: getRelativeDateStr(4), // Minggu ini (4 hari lalu)
-                items: [
-                    { name: 'Apel Fuji Segar', qty: 2, price: 24000 }
-                ]
-            },
-            { 
-                id: generateTransactionId(getRelativeDateStr(15)), 
-                customerName: 'Siti Aminah', 
-                totalPrice: 72000, 
-                status: 'Selesai', 
-                storeName: 'Toko Segar Makmur',
-                date: getRelativeDateStr(15), // Bulan ini (15 hari lalu)
-                items: [
-                    { name: 'Apel Fuji Segar', qty: 3, price: 24000 }
-                ]
-            },
-            { 
-                id: generateTransactionId(getRelativeDateStr(50)), 
-                customerName: 'Budi Santoso', 
-                totalPrice: 120000, 
-                status: 'Selesai', 
-                storeName: 'Toko Segar Makmur',
-                date: getRelativeDateStr(50), // Tahun ini (50 hari lalu)
-                items: [
-                    { name: 'Apel Fuji Segar', qty: 5, price: 24000 }
-                ]
-            }
-        ];
-
-        // Database Mitra Toko Terdaftar & Pending Approval Admin, plus data subscription
-        let stores = [
-            { id: 1, name: 'Toko Segar Makmur', owner: 'Budi Utomo', status: 'Aktif', activeProducts: 3, subscription: 'Basic', expiry: 'Selamanya' },
-            { id: 2, name: 'Mitra Tani Hijau', owner: 'Ahmad Hidayat', status: 'Pending Approval', activeProducts: 0, subscription: 'Basic', expiry: 'Selamanya' }
-        ];
-
-        // State User Login
-        let currentUser = null;
-        let activeTokoFilter = 'hari'; // default filter: hari, minggu, bulan, tahun
-        let selectedPlan = 'Pro'; // default selected subscription plan
-
-        // Inisialisasi awal saat load halaman
-        window.onload = function() {
+        // Inisialisasi awal ikon Lucide saat dokumen siap
+        document.addEventListener("DOMContentLoaded", () => {
             lucide.createIcons();
-            renderProducts('semua');
-            updateCartBadge();
-        }
+        });
 
-        // --- LOGIC NAVIGASI & ALUR TAMPILAN DASHBOARD ---
+        // Router Tab View SPA
         function switchTab(tabId) {
-            // Cegat jika konsumen belum masuk tapi ingin akses Keranjang
-            if (tabId === 'cart') {
-                if (!currentUser || currentUser.role !== 'konsumen') {
-                    openModal('konsumen-login');
-                    return;
-                }
-            }
+            // Daftar semua container halaman utama
+            const mainPages = [
+                'home-page', 'cart-page', 'promo-page', 'tracking-page', 'profile-page',
+                'login-konsumen-page', 'login-toko-page', 'login-admin-page',
+                'dashboard-toko-page', 'dashboard-admin-page'
+            ];
 
-            // Atur Visibilitas Halaman Konsumen
-            const pages = ['home-page', 'promo-page', 'cart-page', 'profile-page', 'tracking-page'];
-            pages.forEach(p => {
-                const el = document.getElementById(p);
-                if (el) el.classList.add('hidden');
+            // Sembunyikan semua halaman terlebih dahulu
+            mainPages.forEach(page => {
+                const element = document.getElementById(page);
+                if (element) element.classList.add('hidden');
             });
 
-            const targetPage = document.getElementById(tabId + '-page');
-            if (targetPage) targetPage.classList.remove('hidden');
-
-            // Atur gaya aktif Navigasi Bawah
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.remove('text-green-600');
-                btn.classList.add('text-gray-400');
-                btn.querySelector('span').classList.replace('font-semibold', 'font-medium');
-            });
-
-            // Hanya tandai aktif jika itu tab utama, bukan halaman sub-tracking
-            if (tabId !== 'tracking') {
-                const activeBtn = document.querySelector(`.nav-btn[data-target="${tabId}-page"]`);
-                if (activeBtn) {
-                    activeBtn.classList.remove('text-gray-400');
-                    activeBtn.classList.add('text-green-600');
-                    activeBtn.querySelector('span').classList.replace('font-medium', 'font-semibold');
-                }
+            // Tampilkan halaman target khusus
+            const targetPage = document.getElementById(`${tabId}-page`);
+            if (targetPage) {
+                targetPage.classList.remove('hidden');
             }
 
-            if (tabId === 'profile') {
-                updateProfileView();
-            } else if (tabId === 'cart') {
-                renderCart();
+            // Manajemen Kontrol Header & Navigasi berdasarkan halaman yang dibuka
+            const header = document.getElementById('main-header');
+            const bottomNav = document.getElementById('bottom-nav');
+
+            if (tabId.startsWith('login-') || tabId.startsWith('dashboard-')) {
+                if (header) header.classList.add('hidden');
+                if (bottomNav) bottomNav.classList.add('hidden');
+            } else {
+                if (header) header.classList.remove('hidden');
+                if (bottomNav) bottomNav.classList.remove('hidden');
+            }
+
+            // Memperbarui pewarnaan ikon navigasi aktif bawah
+            updateNavColors(tabId);
+        }
+
+        // Memperbarui highlight warna tombol navigasi bawah
+        function updateNavColors(activeTab) {
+            const buttons = document.querySelectorAll('#bottom-nav button');
+            const activeClass = 'text-green-600';
+            const inactiveClass = 'text-gray-400';
+
+            buttons.forEach((btn, index) => {
+                const tabs = ['home', 'promo', 'cart', 'tracking', 'profile'];
+                if (tabs[index] === activeTab) {
+                    btn.classList.add(activeClass);
+                    btn.classList.remove(inactiveClass);
+                    btn.querySelector('span').classList.add('font-semibold');
+                } else {
+                    btn.classList.remove(activeClass);
+                    btn.classList.add(inactiveClass);
+                    btn.querySelector('span').classList.remove('font-semibold');
+                }
+            });
+        }
+
+        // Logika Interseptor Beli Konsumen (Wajib login konsumen dahulu)
+        function handleAddToCart(productName) {
+            selectedProduct = productName;
+            
+            if (authenticatedRole === 'konsumen') {
+                // Jika sudah login konsumen langsung masukkan ke keranjang
+                document.getElementById('cart-item-title').innerText = productName;
+                document.getElementById('cart-item-price').innerText = 'Rp19.500';
+                document.getElementById('cart-badge').classList.remove('hidden');
+                document.getElementById('cart-badge').innerText = '1';
+                showToast(`${productName} ditambahkan ke keranjang belanja!`);
+            } else {
+                // Bila belum login konsumen, alihkan paksa ke halaman login konsumen
+                showToast("Silahkan login sebagai Konsumen terlebih dahulu!");
+                setTimeout(() => {
+                    switchTab('login-konsumen');
+                }, 800);
             }
         }
 
-        // --- MANAJEMEN TRANSIK LAYOUT ROLE (USER SWITCHING) ---
-        function applyRoleLayout(role) {
-            const consViews = document.getElementById('consumer-views');
-            const tokoViews = document.getElementById('toko-views');
-            const adminViews = document.getElementById('admin-views');
-            const navCons = document.getElementById('nav-konsumen');
+        // Logika Tombol Bayar Sekarang di Keranjang
+        function processCheckout() {
+            if (authenticatedRole === 'konsumen') {
+                showToast("Transaksi Berhasil diproses! Driver sedang bersiap.");
+                switchTab('tracking');
+            } else {
+                showToast("Silahkan login akun Konsumen untuk menyelesaikan pembayaran!");
+                switchTab('login-konsumen');
+            }
+        }
 
-            // Hide all headers first
-            document.getElementById('header-konsumen').classList.add('hidden');
-            document.getElementById('header-toko').classList.add('hidden');
-            document.getElementById('header-admin').classList.add('hidden');
+        // Navigasi Router ke halaman login tertentu dari menu profil
+        function navigateToLogin(role) {
+            if (authenticatedRole === role) {
+                // Jika sudah login dengan role tersebut, langsung lempar ke halaman dashboard/tujuan
+                if (role === 'toko') switchTab('dashboard-toko');
+                else if (role === 'admin') switchTab('dashboard-admin');
+                else showToast("Anda sudah masuk sebagai akun konsumen.");
+            } else {
+                // Jika belum login, buka halaman login role masing-masing
+                switchTab(`login-${role}`);
+            }
+        }
+
+        // Eksekusi Tombol Submit Login Simulasi Form
+        function submitLogin(role) {
+            authenticatedRole = role;
+            showToast(`Login ${role.toUpperCase()} Berhasil Terautentikasi!`);
+
+            // Update UI Tampilan Informasi Menu Profil Utama
+            const statusTitle = document.getElementById('user-status-title');
+            const statusRole = document.getElementById('user-status-role');
+            const logoutBtn = document.getElementById('logout-btn');
+
+            logoutBtn.classList.remove('hidden');
 
             if (role === 'konsumen') {
-                consViews.classList.remove('hidden');
-                tokoViews.classList.add('hidden');
-                adminViews.classList.add('hidden');
-                navCons.classList.remove('hidden');
-                document.getElementById('header-konsumen').classList.remove('hidden');
+                statusTitle.innerText = "Budi Hartono (Konsumen)";
+                statusRole.innerText = "Level Member: Segari Gold";
+                // Jika sebelumnya ada produk tertunda yang ingin dibeli, langsung eksekusi otomatis
+                if (selectedProduct) {
+                    handleAddToCart(selectedProduct);
+                }
                 switchTab('home');
-            } 
-            else if (role === 'toko') {
-                consViews.classList.add('hidden');
-                tokoViews.classList.remove('hidden');
-                adminViews.classList.add('hidden');
-                navCons.classList.add('hidden'); // Sembunyikan bottom nav konsumen
-                
-                document.getElementById('header-toko').classList.remove('hidden');
-                document.getElementById('header-toko-name').innerText = currentUser.name;
-                renderTokoDashboard();
-            } 
-            else if (role === 'admin') {
-                consViews.classList.add('hidden');
-                tokoViews.classList.add('hidden');
-                adminViews.classList.remove('hidden');
-                navCons.classList.add('hidden'); // Sembunyikan bottom nav konsumen
-                
-                document.getElementById('header-admin').classList.remove('hidden');
-                renderAdminDashboard();
+            } else if (role === 'toko') {
+                statusTitle.innerText = "Toko Subur Makmur (Mitra)";
+                statusRole.innerText = "Status Toko: Buka (Verified)";
+                switchTab('dashboard-toko');
+            } else if (role === 'admin') {
+                statusTitle.innerText = "Admin Utama System";
+                statusRole.innerText = "Hak Akses: Super Administrator";
+                switchTab('dashboard-admin');
             }
         }
 
-        // ================= INTEGRASI KONSUMEN & PROSES BELANJA ================= -->
-        // Catatan: Lencana atau indikator PRO/Platinum premium toko dihapus total agar tidak membingungkan konsumen
-        function renderProducts(category, searchFilter = '') {
-            const grid = document.getElementById('product-grid');
-            grid.innerHTML = '';
-
-            let filtered = products;
-            if (category !== 'semua') {
-                filtered = products.filter(p => p.category === category);
-            }
-            if (searchFilter !== '') {
-                filtered = filtered.filter(p => p.name.toLowerCase().includes(searchFilter.toLowerCase()));
-            }
-
-            filtered.forEach(p => {
-                grid.innerHTML += `
-                    <div class="bg-white rounded-xl p-2.5 border border-gray-100 flex flex-col justify-between shadow-sm relative">
-                        <div class="h-24 bg-gray-100 rounded-lg mb-2 overflow-hidden relative">
-                            <img src="${p.img}" class="w-full h-full object-cover">
-                            <span class="absolute top-1 right-1 bg-green-100 text-green-800 text-[8px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wide truncate max-w-[80px]">${p.store}</span>
-                        </div>
-                        <h4 class="text-xs font-bold text-gray-800">${p.name}</h4>
-                        <p class="text-[10px] text-gray-400 mb-1">${p.unit}</p>
-                        <div class="text-xs font-black text-orange-500">Rp${p.price.toLocaleString()}</div>
-                        <button onclick="addToCart(${p.id})" class="w-full mt-2 bg-green-600 text-white py-1.5 rounded-lg text-xs font-bold btn-active">Beli</button>
-                    </div>
-                `;
-            });
-            lucide.createIcons();
-        }
-
-        function filterCategory(category) {
-            document.querySelectorAll('.category-btn').forEach(btn => {
-                btn.classList.remove('border-green-100', 'bg-green-50');
-                btn.classList.add('bg-gray-50');
-                btn.querySelector('span').classList.replace('font-bold', 'font-medium');
-            });
-
-            event.currentTarget.classList.add('border-green-100', 'bg-green-50');
-            event.currentTarget.classList.remove('bg-gray-50');
-            event.currentTarget.querySelector('span').classList.replace('font-medium', 'font-bold');
-
-            renderProducts(category);
-        }
-
-        function searchProducts() {
-            const query = document.getElementById('search-input').value;
-            renderProducts('semua', query);
-        }
-
-        function addToCart(productId) {
-            if (!currentUser || currentUser.role !== 'konsumen') {
-                openModal('konsumen-login');
-                return;
-            }
-            const product = products.find(p => p.id === productId);
-            const exist = cart.find(item => item.product.id === productId);
-            if (exist) {
-                exist.qty++;
-            } else {
-                cart.push({ product: product, qty: 1 });
-            }
-            updateCartBadge();
-            showMessage(`"${product.name}" dimasukkan ke keranjang.`);
-        }
-
-        function updateCartBadge() {
-            const badge = document.getElementById('cart-badge');
-            const totalQty = cart.reduce((acc, curr) => acc + curr.qty, 0);
-            badge.innerText = totalQty;
-        }
-
-        function renderCart() {
-            const listEl = document.getElementById('cart-items-list');
-            const emptyEl = document.getElementById('empty-cart-state');
-            const activeEl = document.getElementById('cart-active-state');
-
-            if (cart.length === 0) {
-                emptyEl.classList.remove('hidden');
-                activeEl.classList.add('hidden');
-                return;
-            }
-
-            emptyEl.classList.add('hidden');
-            activeEl.classList.remove('hidden');
-            listEl.innerHTML = '';
-
-            let subtotal = 0;
-            cart.forEach((item, index) => {
-                const totalItemPrice = item.product.price * item.qty;
-                subtotal += totalItemPrice;
-                listEl.innerHTML += `
-                    <div class="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                        <img src="${item.product.img}" class="w-12 h-12 object-cover rounded-lg">
-                        <div class="flex-grow">
-                            <h4 class="text-xs font-bold text-gray-800">${item.product.name}</h4>
-                            <p class="text-[10px] text-gray-400">${item.product.unit}</p>
-                            <span class="text-xs font-black text-orange-500">Rp${item.product.price.toLocaleString()}</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <button onclick="updateQty(${index}, -1)" class="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-700 btn-active">-</button>
-                            <span class="text-xs font-bold">${item.qty}</span>
-                            <button onclick="updateQty(${index}, 1)" class="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-700 btn-active">+</button>
-                        </div>
-                    </div>
-                `;
-            });
-
-            document.getElementById('price-subtotal').innerText = 'Rp' + subtotal.toLocaleString();
-            document.getElementById('price-total').innerText = 'Rp' + subtotal.toLocaleString();
-        }
-
-        function updateQty(index, change) {
-            cart[index].qty += change;
-            if (cart[index].qty <= 0) {
-                cart.splice(index, 1);
-            }
-            updateCartBadge();
-            renderCart();
-        }
-
-        function processCheckout() {
-            const subtotal = cart.reduce((acc, curr) => acc + (curr.product.price * curr.qty), 0);
+        // Sistem Logout / Keluar Akun Hapus Sesi
+        function handleLogout() {
+            authenticatedRole = null;
+            selectedProduct = null;
             
-            // Hasilkan Kode Transaksi Unik Berdasarkan Hari Ini
-            const invId = generateTransactionId();
-            
-            // Ambil nama toko dari item pertama di keranjang
-            const storeTarget = cart[0].product.store;
+            document.getElementById('user-status-title').innerText = "Belum Login";
+            document.getElementById('user-status-role').innerText = "Silahkan pilih portal hak akses di bawah";
+            document.getElementById('logout-btn').classList.add('hidden');
+            document.getElementById('cart-badge').classList.add('hidden');
+            document.getElementById('cart-item-title').innerText = "Belum ada barang";
+            document.getElementById('cart-item-price').innerText = "Rp0";
 
-            const newOrder = {
-                id: invId,
-                customerName: currentUser.name,
-                totalPrice: subtotal,
-                status: 'Menyiapkan Pesanan',
-                storeName: storeTarget,
-                date: getRelativeDateStr(0), // Hari ini
-                items: cart.map(item => ({
-                    name: item.product.name,
-                    qty: item.qty,
-                    price: item.product.price
-                }))
-            };
-
-            orders.push(newOrder);
-            cart = [];
-            updateCartBadge();
-            
-            showMessage(`Pembayaran sukses! Kode Transaksi Anda: <b>${invId}</b>`);
+            showToast("Anda telah keluar dari akun.");
             switchTab('profile');
         }
 
-        // ================= RENDER PANEL DASHBOARD KONSUMEN ================= -->
-        function renderConsumerDashboard() {
-            const listEl = document.getElementById('consumer-orders-list');
-            listEl.innerHTML = '';
-
-            const myOrders = orders.filter(o => o.customerName === currentUser.name);
-            if (myOrders.length === 0) {
-                listEl.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">Belum ada riwayat pesanan.</p>';
-                return;
-            }
-
-            myOrders.forEach(order => {
-                let statusBadgeColor = 'bg-yellow-100 text-yellow-700';
-                if (order.status === 'Dalam Perjalanan') statusBadgeColor = 'bg-blue-100 text-blue-700';
-                if (order.status === 'Selesai') statusBadgeColor = 'bg-green-100 text-green-700';
-
-                let orderItemsStr = order.items.map(i => `${i.name} (${i.qty}x)`).join(', ');
-
-                listEl.innerHTML += `
-                    <div class="border border-gray-100 rounded-xl p-3 bg-gray-50 space-y-3">
-                        <div class="flex justify-between items-center pb-2 border-b border-gray-200/50">
-                            <div>
-                                <p class="text-[9px] font-mono text-gray-400 font-bold">${order.id}</p>
-                                <p class="text-[10px] text-gray-500 font-bold mt-0.5">Toko: ${order.storeName}</p>
-                            </div>
-                            <span class="${statusBadgeColor} text-[9px] font-bold px-2 py-0.5 rounded-full">${order.status}</span>
-                        </div>
-                        <div class="text-xs">
-                            <p class="text-gray-500 truncate"><span class="font-bold text-gray-700">Item:</span> ${orderItemsStr}</p>
-                            <p class="font-extrabold text-orange-500 mt-1">Total: Rp${order.totalPrice.toLocaleString()}</p>
-                        </div>
-                        ${order.status === 'Dalam Perjalanan' ? `
-                            <div class="pt-2 border-t border-gray-200/50 flex gap-2">
-                                <button onclick="openLiveTracking('${order.id}')" class="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-600 py-1.5 rounded-lg text-[11px] font-bold btn-active transition flex justify-center items-center gap-1">
-                                    <i data-lucide="map" class="w-3.5 h-3.5"></i> Lacak
-                                </button>
-                                <button onclick="completeOrderConsumer('${order.id}')" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-1.5 rounded-lg text-[11px] font-bold btn-active transition">
-                                    Pesanan Selesai
-                                </button>
-                            </div>
-                        ` : `
-                            <div class="pt-2 border-t border-gray-200/50">
-                                <button onclick="openLiveTracking('${order.id}')" class="w-full bg-green-50 hover:bg-green-100 text-green-700 py-1.5 rounded-lg text-[11px] font-bold btn-active transition flex justify-center items-center gap-1">
-                                    <i data-lucide="map" class="w-3.5 h-3.5"></i> Lihat Detail Pelacakan
-                                </button>
-                            </div>
-                        `}
-                    </div>
-                `;
-            });
-            lucide.createIcons();
-        }
-
-        function completeOrderConsumer(orderId) {
-            const order = orders.find(o => o.id === orderId);
-            if (order) {
-                order.status = 'Selesai';
-                showMessage(`Terima kasih! Pesanan <b>${orderId}</b> telah Anda konfirmasi selesai.`);
-                renderConsumerDashboard();
-            }
-        }
-
-        // Fungsi Pelacakan Dinamis berdasarkan Kode Transaksi Unik
-        function openLiveTracking(orderId) {
-            const order = orders.find(o => o.id === orderId);
-            if (!order) return;
-
-            // Alihkan ke halaman tracking
-            switchTab('tracking');
-
-            // Set data dinamis pada halaman tracking
-            document.getElementById('tracking-invoice-id').innerText = order.id;
-            
-            const badge = document.getElementById('tracking-status-badge');
-            badge.innerText = order.status;
-
-            // Styling status badge
-            if (order.status === 'Menyiapkan Pesanan') {
-                badge.className = "bg-yellow-100 text-yellow-700 text-[10px] font-bold px-2 py-1 rounded-full";
-            } else if (order.status === 'Dalam Perjalanan') {
-                badge.className = "bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-1 rounded-full";
-            } else if (order.status === 'Selesai') {
-                badge.className = "bg-green-100 text-green-700 text-[10px] font-bold px-2 py-1 rounded-full";
-            }
-
-            // Atur visual posisi Pak Kurir di Peta Mini
-            const courier = document.getElementById('courier-icon');
-            if (order.status === 'Menyiapkan Pesanan') {
-                courier.style.left = '20%';
-                courier.style.top = '45%';
-            } else if (order.status === 'Dalam Perjalanan') {
-                courier.style.left = '48%';
-                courier.style.top = '50%';
-            } else if (order.status === 'Selesai') {
-                courier.style.left = '75%';
-                courier.style.top = '52%';
-            }
-
-            // Set warna Linimasa (Timeline Node & Lines)
-            const node1 = document.getElementById('tracking-node-1');
-            const line1 = document.getElementById('tracking-line-1');
-            const node2 = document.getElementById('tracking-node-2');
-            const line2 = document.getElementById('tracking-line-2');
-            const node3 = document.getElementById('tracking-node-3');
-
-            const title2 = document.getElementById('tracking-title-2');
-            const title3 = document.getElementById('tracking-title-3');
-
-            // Reset ke default dahulu (Gray)
-            node2.className = "w-6 h-6 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center text-xs font-bold";
-            node2.innerHTML = "2";
-            title2.className = "text-xs font-bold text-gray-400";
-            line1.className = "w-0.5 h-10 bg-gray-200";
-
-            node3.className = "w-6 h-6 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center text-xs font-bold";
-            node3.innerHTML = "3";
-            title3.className = "text-xs font-bold text-gray-400";
-            line2.className = "w-0.5 h-10 bg-gray-200";
-
-            // Kondisi 1: Selalu terlewati (Diterima)
-            node1.className = "w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs";
-            node1.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i>`;
-
-            if (order.status === 'Menyiapkan Pesanan') {
-                node2.className = "w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs";
-                node2.innerHTML = `<i data-lucide="clock" class="w-3.5 h-3.5 animate-pulse"></i>`;
-                title2.className = "text-xs font-bold text-green-600";
-                line1.className = "w-0.5 h-10 bg-green-500";
-            } 
-            else if (order.status === 'Dalam Perjalanan') {
-                node2.className = "w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs";
-                node2.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i>`;
-                title2.className = "text-xs font-bold text-gray-800";
-                line1.className = "w-0.5 h-10 bg-green-500";
-
-                node3.className = "w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs";
-                node3.innerHTML = `<i data-lucide="bike" class="w-3.5 h-3.5"></i>`;
-                title3.className = "text-xs font-bold text-blue-600 animate-pulse";
-                line2.className = "w-0.5 h-10 bg-green-500";
-            } 
-            else if (order.status === 'Selesai') {
-                node2.className = "w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs";
-                node2.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i>`;
-                title2.className = "text-xs font-bold text-gray-800";
-                line1.className = "w-0.5 h-10 bg-green-500";
-
-                node3.className = "w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs";
-                node3.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i>`;
-                title3.className = "text-xs font-bold text-gray-800";
-                line2.className = "w-0.5 h-10 bg-green-500";
-            }
-
-            lucide.createIcons();
-        }
-
-        // ================= RENDERING PANEL MITRA TOKO (DASHBOARD) ================= -->
-        
-        // Pembaruan Filter Statis Waktu (Dashboard Toko)
-        function setTokoFilter(filterType) {
-            activeTokoFilter = filterType;
-            
-            // Ubah gaya aktif tombol filter
-            const filters = ['hari', 'minggu', 'bulan', 'tahun'];
-            filters.forEach(f => {
-                const btn = document.getElementById(`btn-filter-${f}`);
-                if (btn) {
-                    if (f === filterType) {
-                        btn.className = "flex-1 py-1.5 rounded-lg text-center font-bold bg-white text-orange-600 shadow-sm transition";
-                    } else {
-                        btn.className = "flex-1 py-1.5 rounded-lg text-center font-medium text-gray-500 hover:text-gray-800 transition";
-                    }
-                }
-            });
-            
-            renderTokoDashboard();
-        }
-
-        // Helper filter data pesanan berdasarkan rentang waktu terpilih
-        function getFilteredOrders(orderList, timeframe) {
-            const now = new Date();
-            return orderList.filter(order => {
-                const orderDate = new Date(order.date);
-                if (timeframe === 'hari') {
-                    return orderDate.toDateString() === now.toDateString();
-                } else if (timeframe === 'minggu') {
-                    const diffTime = Math.abs(now - orderDate);
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    return diffDays <= 7;
-                } else if (timeframe === 'bulan') {
-                    return orderDate.getMonth() === now.getMonth() && orderDate.getFullYear() === now.getFullYear();
-                } else if (timeframe === 'tahun') {
-                    return orderDate.getFullYear() === now.getFullYear();
-                }
-                return true;
-            });
-        }
-
-        // Fungsi Render Kartu Langganan Toko Berdasarkan Status Subscription Toko Aktif (Eksklusif Internal Toko)
-        function renderTokoSubscriptionCard(storeObj) {
-            const card = document.getElementById('toko-subscription-card');
-            
-            if (storeObj.subscription === 'Basic' || !storeObj.subscription) {
-                // Tampilan Paket Gratis (Basic)
-                card.className = "bg-gradient-to-r from-slate-700 to-slate-900 rounded-2xl p-4 text-white relative overflow-hidden shadow-md transition-all";
-                card.innerHTML = `
-                    <div class="relative z-10">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <span class="bg-white/10 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full tracking-wider">PAKET AKTIF: BASIC (GRATIS)</span>
-                                <h3 class="text-base font-black mt-1.5">Toko Belum Berlangganan</h3>
-                            </div>
-                            <i data-lucide="award" class="w-8 h-8 text-gray-400"></i>
-                        </div>
-                        <p class="text-[10px] text-slate-300 mt-2">Dikenakan komisi 2.5% per pesanan. Upgrade ke Mitra Pro atau Platinum untuk meningkatkan margin keuntungan usaha Anda!</p>
-                        <button onclick="openSubscriptionModal()" class="mt-4 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl text-[10px] font-black btn-active transition flex items-center gap-1">
-                            <i data-lucide="crown" class="w-3.5 h-3.5 fill-current text-white"></i> Upgrade Mitra Premium
-                        </button>
-                    </div>
-                `;
-            } 
-            else if (storeObj.subscription === 'Pro') {
-                // Tampilan Paket Premium (Pro)
-                card.className = "bg-gradient-to-r from-orange-500 to-amber-600 rounded-2xl p-4 text-white relative overflow-hidden shadow-md transition-all";
-                card.innerHTML = `
-                    <div class="relative z-10">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <span class="bg-white/20 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full tracking-wider">PAKET AKTIF: MITRA PRO</span>
-                                <h3 class="text-base font-black mt-1.5">Layanan Pro Aktif</h3>
-                            </div>
-                            <i data-lucide="zap" class="w-8 h-8 text-yellow-300 fill-yellow-200"></i>
-                        </div>
-                        <p class="text-[10px] text-orange-50 mt-2">Biaya komisi dipangkas otomatis ke 1.0% untuk setiap orderan yang terselesaikan.</p>
-                        <div class="flex justify-between items-center mt-3 pt-2 border-t border-white/20">
-                            <span class="text-[9px] text-orange-200 font-semibold">Masa Aktif: s/d ${storeObj.expiry || '30 Hari Kedepan'}</span>
-                            <button onclick="openSubscriptionModal()" class="bg-white text-orange-600 px-3 py-1.5 rounded-lg text-[9px] font-black btn-active transition">Ubah Paket</button>
-                        </div>
-                    </div>
-                `;
-            } 
-            else if (storeObj.subscription === 'Platinum') {
-                // Tampilan Paket Sultan (Platinum)
-                card.className = "bg-gradient-to-r from-violet-600 to-indigo-800 rounded-2xl p-4 text-white relative overflow-hidden shadow-md transition-all";
-                card.innerHTML = `
-                    <div class="relative z-10">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <span class="bg-white/20 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full tracking-wider">PAKET AKTIF: MITRA PLATINUM</span>
-                                <h3 class="text-base font-black mt-1.5">Layanan Platinum VIP</h3>
-                            </div>
-                            <i data-lucide="gem" class="w-8 h-8 text-pink-300 fill-pink-200"></i>
-                        </div>
-                        <p class="text-[10px] text-violet-100 mt-2">Bebas dari semua komisi platform (Beban komisi 0%), fitur kustom voucher toko terbuka, & prioritas bantuan 24 jam.</p>
-                        <div class="flex justify-between items-center mt-3 pt-2 border-t border-white/20">
-                            <span class="text-[9px] text-violet-200 font-semibold">Masa Aktif: s/d ${storeObj.expiry || '30 Hari Kedepan'}</span>
-                            <button onclick="openSubscriptionModal()" class="bg-white text-violet-600 px-3 py-1.5 rounded-lg text-[9px] font-black btn-active transition">Ubah Paket</button>
-                        </div>
-                    </div>
-                `;
-            }
-            lucide.createIcons();
-        }
-
-        function renderTokoDashboard() {
-            // Ambil data toko aktif saat ini
-            const myStore = stores.find(s => s.name === currentUser.name);
-            if (!myStore) return;
-
-            // Render Kartu Berlangganan (Subscription Card)
-            renderTokoSubscriptionCard(myStore);
-
-            // Ambil seluruh pesanan milik toko aktif ini
-            const myTokoOrders = orders.filter(o => o.storeName === currentUser.name);
-            
-            // Filter pesanan berdasarkan rentang waktu terpilih
-            const filteredTokoOrders = getFilteredOrders(myTokoOrders, activeTokoFilter);
-            
-            // Hitung Omset (Hanya pesanan berstatus Selesai dalam rentang filter)
-            const completedFilteredOrders = filteredTokoOrders.filter(o => o.status === 'Selesai');
-            const revenue = completedFilteredOrders.reduce((acc, curr) => acc + curr.totalPrice, 0);
-
-            // Tampilkan Statistik dashboard toko yang dinamis
-            document.getElementById('toko-stat-revenue').innerText = 'Rp' + revenue.toLocaleString();
-            document.getElementById('toko-stat-orders').innerText = filteredTokoOrders.length + ' Transaksi';
-
-            // 1. Render Produk saya (yang bisa diedit / dikelola stoknya)
-            const productsList = document.getElementById('toko-products-list');
-            productsList.innerHTML = '';
-            
-            const myProducts = products.filter(p => p.store === currentUser.name);
-            if (myProducts.length === 0) {
-                productsList.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">Belum ada produk segar terdaftar.</p>';
-            } else {
-                myProducts.forEach(p => {
-                    productsList.innerHTML += `
-                        <div class="flex items-center justify-between p-2.5 bg-gray-50 rounded-xl border border-gray-100 text-xs">
-                            <div class="flex items-center gap-2">
-                                <img src="${p.img}" class="w-8 h-8 object-cover rounded-lg">
-                                <div>
-                                    <h4 class="font-bold text-gray-800">${p.name}</h4>
-                                    <p class="text-[10px] text-gray-400">${p.unit} - Rp${p.price.toLocaleString()}</p>
-                                </div>
-                            </div>
-                            <button onclick="deleteProduct(${p.id})" class="text-red-500 hover:text-red-700 font-bold p-1">Hapus</button>
-                        </div>
-                    `;
-                });
-            }
-
-            // 2. Render Daftar Transaksi Toko
-            const ordersList = document.getElementById('toko-orders-list');
-            ordersList.innerHTML = '';
-
-            if (filteredTokoOrders.length === 0) {
-                ordersList.innerHTML = `<p class="text-xs text-gray-400 text-center py-6">Tidak ada transaksi pada filter ini (${activeTokoFilter.toUpperCase()}).</p>`;
-            } else {
-                filteredTokoOrders.forEach(order => {
-                    let nextStatusAction = '';
-                    let statusColor = 'bg-orange-100 text-orange-700';
-
-                    if (order.status === 'Menyiapkan Pesanan') {
-                        nextStatusAction = `<button onclick="updateOrderStatus('${order.id}', 'Dalam Perjalanan')" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-1 px-3 rounded-lg text-[10px] btn-active transition">Kirim ke Kurir</button>`;
-                    } else if (order.status === 'Dalam Perjalanan') {
-                        statusColor = 'bg-blue-100 text-blue-700';
-                        nextStatusAction = `<span class="text-[9px] text-gray-400 font-bold italic flex items-center gap-1"><i data-lucide="clock" class="w-3.5 h-3.5"></i> Menunggu Konfirmasi Pembeli</span>`;
-                    } else if (order.status === 'Selesai') {
-                        statusColor = 'bg-green-100 text-green-700';
-                        nextStatusAction = `<span class="text-[10px] text-green-600 font-bold flex items-center gap-0.5"><i data-lucide="check" class="w-3.5 h-3.5"></i> Selesai</span>`;
-                    }
-
-                    ordersList.innerHTML += `
-                        <div class="border border-orange-100/50 rounded-xl p-3 bg-orange-50/20 space-y-2 text-xs">
-                            <div class="flex justify-between items-center">
-                                <div>
-                                    <span class="font-mono font-bold text-gray-700 text-[10px] block">${order.id}</span>
-                                    <span class="text-[8px] text-gray-400 block mt-0.5">Tanggal: ${order.date}</span>
-                                </div>
-                                <span class="${statusColor} text-[9px] font-bold px-2 py-0.5 rounded-full">${order.status}</span>
-                            </div>
-                            <p class="text-gray-600 font-semibold">Pemesan: <span class="text-gray-900">${order.customerName}</span></p>
-                            <p class="text-gray-600">Items: ${order.items.map(i => `${i.name} (x${i.qty})`).join(', ')}</p>
-                            <div class="flex justify-between items-center pt-2 border-t border-dashed border-gray-200">
-                                <span class="font-extrabold text-orange-600">Rp${order.totalPrice.toLocaleString()}</span>
-                                ${nextStatusAction}
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-            lucide.createIcons();
-        }
-
-        function updateOrderStatus(orderId, newStatus) {
-            const order = orders.find(o => o.id === orderId);
-            if (order) {
-                order.status = newStatus;
-                showMessage(`Status pesanan <b>${orderId}</b> diubah menjadi: <b>${newStatus}</b>`);
-                renderTokoDashboard();
-            }
-        }
-
-        function openAddProductModal() {
-            openModal('add-product');
-        }
-
-        function submitAddProduct() {
-            const name = document.getElementById('p-name').value;
-            const price = parseInt(document.getElementById('p-price').value);
-            const unit = document.getElementById('p-unit').value;
-            const category = document.getElementById('p-category').value;
-
-            if (!name || !price || !unit) {
-                showMessage('Harap isi semua kolom data produk!');
-                return;
-            }
-
-            const newProduct = {
-                id: products.length + 1,
-                name: name,
-                price: price,
-                category: category,
-                unit: unit,
-                img: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=300', // Placeholder default
-                store: currentUser.name
-            };
-
-            products.push(newProduct);
-            showMessage(`Berhasil menambahkan produk "${name}" ke dalam katalog belanja Segari!`);
-            closeModal();
-            renderTokoDashboard();
-            renderProducts('semua');
-        }
-
-        function deleteProduct(productId) {
-            products = products.filter(p => p.id !== productId);
-            renderTokoDashboard();
-            renderProducts('semua');
-            showMessage('Produk berhasil dihapus dari katalog.');
-        }
-
-        // ================= RENDERING PANEL ADMIN PANEL (SUPER ADMIN) ================= -->
-        function renderAdminDashboard() {
-            const approvalsList = document.getElementById('admin-approvals-list');
-            approvalsList.innerHTML = '';
-
-            const pendingStores = stores.filter(s => s.status === 'Pending Approval');
-            if (pendingStores.length === 0) {
-                approvalsList.innerHTML = '<p class="text-xs text-gray-400 text-center py-3">Tidak ada permohonan pendaftaran mitra baru.</p>';
-            } else {
-                pendingStores.forEach(store => {
-                    approvalsList.innerHTML += `
-                        <div class="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-xl text-xs">
-                            <div>
-                                <h4 class="font-extrabold text-gray-800">${store.name}</h4>
-                                <p class="text-[10px] text-gray-500">Pemilik: ${store.owner}</p>
-                            </div>
-                            <div class="flex gap-1.5">
-                                <button onclick="approveStore(${store.id})" class="bg-green-600 text-white font-bold px-2 py-1 rounded-lg text-[9px] btn-active">Setujui</button>
-                                <button onclick="rejectStore(${store.id})" class="bg-red-100 text-red-600 font-bold px-2 py-1 rounded-lg text-[9px] btn-active">Tolak</button>
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-
-            const transactionsList = document.getElementById('admin-transactions-list');
-            transactionsList.innerHTML = '';
-
-            orders.forEach(order => {
-                transactionsList.innerHTML += `
-                    <div class="flex justify-between items-center p-2.5 bg-gray-50 border border-gray-100 rounded-xl text-xs">
-                        <div>
-                            <span class="font-mono font-bold text-gray-800 text-[10px] block">${order.id}</span>
-                            <span class="text-[9px] text-gray-400 block mt-0.5">Toko: ${order.storeName} | Pemesan: ${order.customerName}</span>
-                        </div>
-                        <div class="text-right">
-                            <span class="font-bold text-gray-900 block">Rp${order.totalPrice.toLocaleString()}</span>
-                            <span class="text-[8px] bg-gray-200 text-gray-700 font-bold px-1.5 py-0.5 rounded-full uppercase">${order.status}</span>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        function approveStore(storeId) {
-            const store = stores.find(s => s.id === storeId);
-            if (store) {
-                store.status = 'Aktif';
-                showMessage(`Pendaftaran Mitra Toko "<b>${store.name}</b>" berhasil disetujui!`);
-                renderAdminDashboard();
-            }
-        }
-
-        function rejectStore(storeId) {
-            stores = stores.filter(s => s.id !== storeId);
-            showMessage('Permohonan pendaftaran Toko ditolak.');
-            renderAdminDashboard();
-        }
-
-        // ================= SISTEM AUTHENTICATION & LOGIN/REGISTRASI ================= -->
-        function doLogin(role, nameInput) {
-            const finalName = nameInput.trim() !== '' ? nameInput : (role === 'admin' ? 'Super Admin' : 'John Doe');
-            
-            if (role === 'toko') {
-                const targetStore = stores.find(s => s.name.toLowerCase() === finalName.toLowerCase());
-                if (!targetStore) {
-                    showMessage('Toko belum terdaftar! Silakan lakukan pendaftaran mitra toko terlebih dahulu.');
-                    return;
-                }
-                if (targetStore.status === 'Pending Approval') {
-                    showMessage('Akun Toko Anda sedang menunggu persetujuan (approval) dari Administrator.');
-                    return;
-                }
-            }
-
-            currentUser = { role: role, name: finalName };
-            closeModal();
-            updateProfileView();
-            applyRoleLayout(role);
-
-            showMessage(`Selamat Datang, Anda login sebagai <b>${role.toUpperCase()}</b> (${finalName})`);
-        }
-
-        function submitTokoRegistration() {
-            const storeName = document.getElementById('reg-toko-name').value;
-            const ownerName = document.getElementById('reg-toko-owner').value;
-
-            if (!storeName || !ownerName) {
-                showMessage('Harap lengkapi semua kolom data pendaftaran!');
-                return;
-            }
-
-            const newStore = {
-                id: stores.length + 1,
-                name: storeName,
-                owner: ownerName,
-                status: 'Pending Approval',
-                activeProducts: 0,
-                subscription: 'Basic',
-                expiry: 'Selamanya'
-            };
-
-            stores.push(newStore);
-            showMessage('Pendaftaran Terkirim!<br>Akun toko Anda saat ini menunggu persetujuan Admin.');
-            openModal('toko-login');
-        }
-
-        function doLogout() {
-            currentUser = null;
-            updateProfileView();
-            applyRoleLayout('konsumen');
-            switchTab('home');
-            showMessage('Berhasil keluar dari akun.');
-        }
-
-        function updateProfileView() {
-            const unauthView = document.getElementById('unauth-view');
-            const authView = document.getElementById('auth-view');
-            
-            if (currentUser && currentUser.role === 'konsumen') {
-                unauthView.classList.add('hidden');
-                authView.classList.remove('hidden');
-                document.getElementById('auth-name').innerText = currentUser.name;
-                renderConsumerDashboard();
-            } else {
-                unauthView.classList.remove('hidden');
-                authView.classList.add('hidden');
-            }
-        }
-
-        // ================= KELOLA SISTEM PREMIUM BERLANGGANAN TOKO ================= -->
-        function openSubscriptionModal() {
-            openModal('toko-subscription');
-            selectSubPlan('Pro');
-        }
-
-        function selectSubPlan(planName) {
-            selectedPlan = planName;
-            
-            document.getElementById('plan-card-Pro').className = "border border-gray-200 p-4 rounded-xl cursor-pointer hover:border-orange-400 transition relative";
-            document.getElementById('plan-card-Platinum').className = "border border-gray-200 p-4 rounded-xl cursor-pointer hover:border-violet-400 transition relative";
-            
-            if (planName === 'Pro') {
-                document.getElementById('plan-card-Pro').className = "border-2 border-orange-500 bg-orange-50/40 p-4 rounded-xl cursor-pointer transition relative";
-            } else if (planName === 'Platinum') {
-                document.getElementById('plan-card-Platinum').className = "border-2 border-violet-600 bg-violet-50/40 p-4 rounded-xl cursor-pointer transition relative";
-            }
-        }
-
-        function processSubscriptionPayment() {
-            const currentToko = stores.find(s => s.name === currentUser.name);
-            if (currentToko) {
-                currentToko.subscription = selectedPlan;
-                
-                const futureDate = new Date();
-                futureDate.setDate(futureDate.getDate() + 30);
-                currentToko.expiry = futureDate.toISOString().split('T')[0];
-
-                showMessage(`Transaksi Sukses! Paket <b>Mitra ${selectedPlan}</b> toko Anda telah diaktifkan secara instan.`);
-                closeModal();
-                
-                renderTokoDashboard();
-                renderProducts('semua');
-            }
-        }
-
-        // --- GLOBAL HELPER MODALS & MESSAGES ---
-        function openModal(type) {
-            document.getElementById('auth-modal').classList.remove('hidden');
-            document.querySelectorAll('.auth-form').forEach(form => form.classList.add('hidden'));
-            document.getElementById('form-' + type).classList.remove('hidden');
-            lucide.createIcons();
-        }
-
-        function closeModal() {
-            document.getElementById('auth-modal').classList.add('hidden');
-        }
-
-        function showMessage(msg) {
+        // Generator Komponen Toast Notification Otomatis
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            toast.className = 'fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded-xl px-4 py-3 shadow-xl z-50 transition-all duration-300 w-[90%] max-w-[380px] text-center border border-gray-800';
-            toast.innerHTML = msg;
-            document.body.appendChild(toast);
+            toast.className = 'toast-msg animate-slide-up';
+            toast.innerText = message;
+            container.appendChild(toast);
+
+            // Bersihkan elemen toast otomatis dari DOM setelah 3 detik
             setTimeout(() => {
-                toast.classList.add('opacity-0');
-                setTimeout(() => toast.remove(), 300);
+                toast.remove();
             }, 3000);
-        }
-
-        function copyPromo(code) {
-            document.execCommand('copy');
-            showMessage(`Kode promo "${code}" berhasil disalin!`);
-        }
-
-        function openLocationModal() {
-            showMessage('Aplikasi mendeteksi lokasi pengiriman di dalam area jangkauan Segari Hub!');
         }
     </script>
 </body>
-</html>
+                            </html>
